@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const MODEL = "claude-haiku-4-5";
 
 // Converts Tiptap JSON to readable plain text for Claude
 export function tiptapToPlainText(content: unknown): string {
@@ -9,9 +10,7 @@ export function tiptapToPlainText(content: unknown): string {
   const node = content as any;
 
   if (node.type === "text") return node.text ?? "";
-
   if (node.type === "hardBreak") return "\n";
-
   if (!node.content || !Array.isArray(node.content)) return "";
 
   const children: string = node.content.map(tiptapToPlainText).join("");
@@ -48,27 +47,25 @@ export async function generateChangelog(
   const newText = tiptapToPlainText(newContent).trim();
 
   const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
+    model: MODEL,
     max_tokens: 256,
+    system: [
+      {
+        type: "text",
+        text: "You write changelog entries for product requirement documents (PRDs). When given a merged suggestion with old and new versions, write a single concise paragraph (2-4 sentences) describing what changed, why it matters, and its product impact. No bullet points. No heading. Just the paragraph. Be direct and specific.",
+        cache_control: { type: "ephemeral" },
+      },
+    ],
     messages: [
       {
         role: "user",
-        content: `You are writing a changelog entry for a product requirements document (PRD).
-
-A suggestion titled "${suggestionTitle}" was merged${suggestionDescription ? ` with the reason: "${suggestionDescription}"` : ""}.
+        content: `Suggestion "${suggestionTitle}" was merged${suggestionDescription ? ` with reason: "${suggestionDescription}"` : ""}.
 
 PREVIOUS VERSION:
 ${oldText}
 
 NEW VERSION:
-${newText}
-
-Write a single, concise changelog paragraph (2-4 sentences max). Focus on:
-- What actually changed (scope, requirements, flows, timelines)
-- Why it matters (if the reason was given)
-- Impact on the product
-
-Do NOT use bullet points. Do NOT include a heading. Just the paragraph. Be direct and specific.`,
+${newText}`,
       },
     ],
   });
@@ -89,23 +86,19 @@ export async function detectContradictions(content: unknown): Promise<Contradict
   if (text.length < 100) return [];
 
   const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
+    model: MODEL,
     max_tokens: 512,
+    system: [
+      {
+        type: "text",
+        text: 'You are a product requirements analyst. Find internal contradictions in PRDs - places where the document says two conflicting things. Return a JSON array where each item has: "section1" (first conflicting statement, max 60 chars), "section2" (second conflicting statement, max 60 chars), "issue" (one sentence explaining the contradiction, max 100 chars). If no contradictions, return []. Return ONLY valid JSON, no explanation.',
+        cache_control: { type: "ephemeral" },
+      },
+    ],
     messages: [
       {
         role: "user",
-        content: `You are a product requirements analyst. Analyze this PRD for internal contradictions - places where the document says two conflicting things.
-
-PRD:
-${text}
-
-Return a JSON array of contradictions. Each item must have:
-- "section1": short quote or description of the first conflicting statement (max 60 chars)
-- "section2": short quote or description of the second conflicting statement (max 60 chars)
-- "issue": one sentence explaining the contradiction (max 100 chars)
-
-If no contradictions found, return an empty array [].
-Return ONLY valid JSON, no explanation.`,
+        content: `PRD:\n${text}`,
       },
     ],
   });
@@ -133,18 +126,19 @@ export async function summarizeDiff(
   if (!oldText && !newText) return "";
 
   const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
+    model: MODEL,
     max_tokens: 200,
+    system: [
+      {
+        type: "text",
+        text: 'Compare two versions of a PRD and summarize what changed in 2-3 bullet points. Be specific and concise. Each bullet is one short sentence. No intro text - start directly with "•".',
+        cache_control: { type: "ephemeral" },
+      },
+    ],
     messages: [
       {
         role: "user",
-        content: `Compare these two versions of a PRD and summarize what changed in 2-3 bullet points. Be specific and concise. Each bullet should be one short sentence. No intro text, just the bullets starting with "•".
-
-BEFORE:
-${oldText}
-
-AFTER:
-${newText}`,
+        content: `BEFORE:\n${oldText}\n\nAFTER:\n${newText}`,
       },
     ],
   });
