@@ -4,9 +4,13 @@
 GitHub for PRDs. Propose, review, and approve changes to product requirement documents using a PR-style workflow. Full version history, AI-written changelogs, contradiction detection, and shareable diff links.
 
 ## Current Status
-**Phase 1 - MVP Frontend (IN PROGRESS)**
+**Phase 2 - Supabase Integration (UP NEXT)**
 
-Core screens built with demo data. Auth wired up via Clerk. Supabase schema ready to run.
+- Phase 1 complete: all screens built with demo data
+- Clerk auth wired (Google + GitHub OAuth) - keys in .env.local
+- Supabase project live: https://yretxiadimbytyjqaszw.supabase.co (ap-south-1)
+- All 7 tables created with RLS, indexes, FK constraints, and updated_at triggers
+- Next: replace demo data with real Supabase queries + API routes
 
 ## Architecture
 
