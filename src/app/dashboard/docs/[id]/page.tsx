@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   GitPullRequest, History, Save, Eye, PenLine, ChevronLeft,
   Sparkles, Plus, Check, X, MessageSquare, Clock, Loader2,
+  AlertTriangle, ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -15,6 +16,12 @@ import { formatRelativeTime } from "@/lib/utils";
 
 type Mode = "read" | "suggest" | "history";
 type SuggestionStatus = "open" | "approved" | "rejected" | "merged";
+
+interface Contradiction {
+  section1: string;
+  section2: string;
+  issue: string;
+}
 
 interface Version {
   id: string;
@@ -65,13 +72,14 @@ export default function DocPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [workspace, setWorkspace] = useState<{ id: string } | null>(null);
+  const [contradictions, setContradictions] = useState<Contradiction[]>([]);
+  const [checkingContradictions, setCheckingContradictions] = useState(false);
+  const contradictionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load workspace on mount (needed for new doc creation)
   useEffect(() => {
     fetch("/api/workspace").then((r) => r.json()).then(setWorkspace);
   }, []);
 
-  // Load doc data
   useEffect(() => {
     if (isNew) return;
     setLoading(true);
@@ -83,8 +91,9 @@ export default function DocPage() {
       setDoc(docData);
       setTitle(docData.title ?? "Untitled");
       if (docData.currentVersion?.content) {
-        setCurrentContent(docData.currentVersion.content as object);
-        setSuggestContent(docData.currentVersion.content as object);
+        const c = docData.currentVersion.content as object;
+        setCurrentContent(c);
+        setSuggestContent(c);
       }
       setVersions(versionsData);
       if (versionsData.length > 0) setSelectedVersion(versionsData[0]);
@@ -92,20 +101,43 @@ export default function DocPage() {
     }).catch(console.error).finally(() => setLoading(false));
   }, [docId, isNew]);
 
-  // Load selected version content for history mode
   useEffect(() => {
     if (!selectedVersion) return;
-    // Latest version content is already in doc.currentVersion
     if (doc && selectedVersion.id === doc.current_version_id) {
       setSelectedVersionContent(currentContent);
       return;
     }
-    // Fetch older version content
     fetch(`/api/documents/${docId}/versions/${selectedVersion.id}`)
       .then((r) => r.json())
       .then((v) => setSelectedVersionContent(v.content ?? null))
       .catch(console.error);
   }, [selectedVersion, doc, currentContent, docId]);
+
+  // Debounced contradiction check - fires 3s after user stops typing
+  const runContradictionCheck = useCallback((content: object) => {
+    if (contradictionTimer.current) clearTimeout(contradictionTimer.current);
+    contradictionTimer.current = setTimeout(async () => {
+      setCheckingContradictions(true);
+      try {
+        const res = await fetch(`/api/documents/${docId}/check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+        const data = await res.json();
+        setContradictions(data.contradictions ?? []);
+      } catch {
+        // silent fail
+      } finally {
+        setCheckingContradictions(false);
+      }
+    }, 3000);
+  }, [docId]);
+
+  const handleContentChange = useCallback((content: object) => {
+    setCurrentContent(content);
+    if (!isNew && mode === "read") runContradictionCheck(content);
+  }, [isNew, mode, runContradictionCheck]);
 
   const handleSaveNew = useCallback(async () => {
     if (!workspace) return;
@@ -117,14 +149,11 @@ export default function DocPage() {
         body: JSON.stringify({ workspace_id: workspace.id, title: title || "Untitled" }),
       });
       const newDoc = await res.json();
-      // Save the content as v1
-      if (Object.keys(currentContent).length > 2) {
-        await fetch(`/api/documents/${newDoc.id}/versions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: currentContent }),
-        });
-      }
+      await fetch(`/api/documents/${newDoc.id}/versions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: currentContent }),
+      });
       router.push(`/dashboard/docs/${newDoc.id}`);
     } finally {
       setSaving(false);
@@ -140,10 +169,11 @@ export default function DocPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: currentContent }),
       });
-      // Refresh doc
-      const updated = await fetch(`/api/documents/${docId}`).then((r) => r.json());
+      const [updated, updatedVersions] = await Promise.all([
+        fetch(`/api/documents/${docId}`).then((r) => r.json()),
+        fetch(`/api/documents/${docId}/versions`).then((r) => r.json()),
+      ]);
       setDoc(updated);
-      const updatedVersions = await fetch(`/api/documents/${docId}/versions`).then((r) => r.json());
       setVersions(updatedVersions);
       if (updatedVersions.length > 0) setSelectedVersion(updatedVersions[0]);
     } finally {
@@ -174,7 +204,6 @@ export default function DocPage() {
           base_version_id: doc.current_version_id,
         }),
       });
-      // Refresh suggestions
       const updated = await fetch(`/api/documents/${docId}/suggestions`).then((r) => r.json());
       setSuggestions(updated);
       setMode("read");
@@ -221,12 +250,7 @@ export default function DocPage() {
           </Button>
         </div>
         <div className="flex-1 overflow-hidden">
-          <DocEditor
-            content={null}
-            editable
-            onChange={setCurrentContent}
-            placeholder="Start writing your PRD..."
-          />
+          <DocEditor content={null} editable onChange={setCurrentContent} placeholder="Start writing your PRD..." />
         </div>
       </div>
     );
@@ -283,7 +307,7 @@ export default function DocPage() {
 
           {/* READ MODE */}
           {mode === "read" && (
-            <DocEditor content={currentContent} editable onChange={setCurrentContent} />
+            <DocEditor content={currentContent} editable onChange={handleContentChange} />
           )}
 
           {/* SUGGEST MODE */}
@@ -346,6 +370,9 @@ export default function DocPage() {
             <div className="flex flex-1 overflow-hidden">
               <div className="w-64 shrink-0 border-r border-[#1e1e24] overflow-auto p-3 space-y-1">
                 <p className="text-xs text-[#606070] font-medium uppercase tracking-wide px-2 py-1">Versions</p>
+                {versions.length === 0 && (
+                  <p className="text-xs text-[#606070] px-2">No versions yet.</p>
+                )}
                 {versions.map((v) => (
                   <button
                     key={v.id}
@@ -365,6 +392,11 @@ export default function DocPage() {
                     <p className="text-xs text-[#606070] flex items-center gap-1">
                       <Clock className="w-3 h-3" />{formatRelativeTime(v.created_at)}
                     </p>
+                    {v.ai_summary && (
+                      <p className="text-[10px] text-indigo-400 mt-1 line-clamp-2 flex items-start gap-1">
+                        <Sparkles className="w-2.5 h-2.5 shrink-0 mt-0.5" />{v.ai_summary}
+                      </p>
+                    )}
                   </button>
                 ))}
               </div>
@@ -390,9 +422,55 @@ export default function DocPage() {
           )}
         </div>
 
-        {/* Right panel: suggestions */}
+        {/* Right panel */}
         {mode !== "history" && (
           <div className="w-72 shrink-0 border-l border-[#1e1e24] bg-[#0e0e12] overflow-auto flex flex-col">
+
+            {/* Contradiction detection panel */}
+            {mode === "read" && (
+              <div className="border-b border-[#1e1e24]">
+                <div className="px-4 py-3 flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#f2f2f5] flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-indigo-400" />
+                    AI Checks
+                  </span>
+                  {checkingContradictions && (
+                    <Loader2 className="w-3 h-3 text-[#606070] animate-spin" />
+                  )}
+                  {!checkingContradictions && contradictions.length === 0 && (
+                    <span className="text-[10px] text-green-400 flex items-center gap-1">
+                      <Check className="w-3 h-3" />Clean
+                    </span>
+                  )}
+                  {!checkingContradictions && contradictions.length > 0 && (
+                    <Badge variant="warning">{contradictions.length}</Badge>
+                  )}
+                </div>
+                {contradictions.length > 0 && (
+                  <div className="px-3 pb-3 space-y-2">
+                    {contradictions.map((c, i) => (
+                      <div key={i} className="p-2.5 rounded-lg bg-amber-500/8 border border-amber-500/20">
+                        <p className="text-xs text-amber-400 font-medium mb-1 flex items-start gap-1.5">
+                          <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />{c.issue}
+                        </p>
+                        <p className="text-[10px] text-[#606070] leading-relaxed">
+                          <span className="text-[#a0a0b0]">&ldquo;{c.section1}&rdquo;</span>
+                          {" vs "}
+                          <span className="text-[#a0a0b0]">&ldquo;{c.section2}&rdquo;</span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!checkingContradictions && contradictions.length === 0 && (
+                  <p className="px-4 pb-3 text-[10px] text-[#606070]">
+                    Checks run automatically as you edit.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Suggestions panel */}
             <div className="px-4 py-3 border-b border-[#1e1e24] flex items-center justify-between">
               <span className="text-sm font-medium text-[#f2f2f5] flex items-center gap-2">
                 <GitPullRequest className="w-4 h-4 text-indigo-400" />Suggestions

@@ -4,13 +4,13 @@
 GitHub for PRDs. Propose, review, and approve changes to product requirement documents using a PR-style workflow. Full version history, AI-written changelogs, contradiction detection, and shareable diff links.
 
 ## Current Status
-**Phase 2 - Supabase Integration (UP NEXT)**
+**Phase 3 - AI Features COMPLETE**
 
-- Phase 1 complete: all screens built with demo data
-- Clerk auth wired (Google + GitHub OAuth) - keys in .env.local
-- Supabase project live: https://yretxiadimbytyjqaszw.supabase.co (ap-south-1)
-- All 7 tables created with RLS, indexes, FK constraints, and updated_at triggers
-- Next: replace demo data with real Supabase queries + API routes
+- Phase 1 complete: all screens built with Tiptap editor, diff view, suggestion/review flows
+- Phase 2 complete: all API routes live, Supabase queries replacing demo data everywhere
+- Phase 3 complete: Claude API integration for changelog, contradiction detection, diff summary
+- ANTHROPIC_API_KEY still needs to be swapped in `.env.local` (placeholder set)
+- Build passes clean - ready for local testing via `npm run dev`
 
 ## Architecture
 
@@ -89,31 +89,39 @@ Right sidebar shows open/merged suggestions for that doc.
 - Review panel: approve, reject, merge buttons
 - AI summary of what the change does
 
-## What's Using Demo Data (to be replaced with Supabase)
-- Dashboard doc list
-- Document content and versions
-- Suggestions list
-- Reviews and comments
+## Completed Features
+
+### Phase 1 - UI Scaffolding
+- Landing page with marketing copy and live diff demo
+- Sign in / Sign up via Clerk (Google + GitHub OAuth)
+- Dashboard doc list with search
+- Document page with 3 modes: Read, Suggest, History
+- Suggestion detail page with diff view, comments, reviews
+
+### Phase 2 - Supabase Integration
+- All API routes live under `/api/`
+- Real document create/read/update via Supabase
+- Real suggestion create/approve/reject/merge flow
+- Version history stored as immutable snapshots
+- Comments and reviews fully wired
+
+### Phase 3 - AI Features (Claude `claude-sonnet-4-6`)
+- **Changelog on merge** - auto-generated 2-4 sentence summary stored in `versions.ai_summary`
+- **Contradiction detection** - on every document edit (3s debounce), surfaces conflicting statements in sidebar
+- **Diff summary** - on suggestion detail page load, bullet-point summary of what changed
 
 ## Next Steps
 
-### Phase 2 - Supabase Integration
-1. Set up Supabase project, run `supabase-schema.sql`
-2. Fill in `.env.local` with real Supabase + Clerk keys
-3. Wire up Clerk's `userId` to Supabase `user_id` fields
-4. Replace demo data with real API routes:
-   - `POST /api/documents` - create doc
-   - `GET /api/documents/[id]` - fetch doc + current version
-   - `POST /api/versions` - save new version
-   - `POST /api/suggestions` - create suggestion
-   - `PATCH /api/suggestions/[id]` - approve/reject/merge
-5. On merge: call Claude API to generate ai_summary
-6. On save: call Claude to run contradiction detection
+### Phase 4 - Integrations
+- Slack webhook on suggestion opened/merged
+- Notion import (paste Notion URL, fetch content)
+- Shareable public diff links (no auth required)
 
-### Phase 3 - AI Features
-- Changelog generation on merge (Claude Sonnet)
-- Contradiction detection on document save (Claude Opus)
-- Plain-English diff summary between any two versions
+### Phase 5 - Polish + Deploy
+- Real-time updates (Supabase realtime subscriptions)
+- Keyboard shortcuts
+- Mobile responsive tweaks
+- Deploy to Vercel
 
 ### Phase 4 - Integrations
 - Slack webhook on suggestion opened/merged

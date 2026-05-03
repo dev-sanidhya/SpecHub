@@ -54,6 +54,8 @@ export default function SuggestionPage() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [merging, setMerging] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
   const load = useCallback(async () => {
     const [s, r, c] = await Promise.all([
@@ -65,6 +67,20 @@ export default function SuggestionPage() {
     setReviews(r);
     setComments(c);
     setLoading(false);
+
+    // Fetch AI diff summary after suggestion data is available
+    if (s && !s.error) {
+      setLoadingSummary(true);
+      fetch(`/api/suggestions/${sid}/summary`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      })
+        .then((res) => res.json())
+        .then((data) => setAiSummary(data.summary ?? null))
+        .catch(() => setAiSummary(null))
+        .finally(() => setLoadingSummary(false));
+    }
   }, [sid]);
 
   useEffect(() => { load(); }, [load]);
@@ -283,12 +299,20 @@ export default function SuggestionPage() {
             )}
           </div>
 
-          {/* AI summary placeholder */}
+          {/* AI diff summary */}
           <div className="p-4 border-b border-[#1e1e24]">
             <p className="text-xs text-[#606070] font-medium uppercase tracking-wide mb-2 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />AI summary
             </p>
-            <p className="text-xs text-[#606070] italic">AI changelog generation coming in Phase 3.</p>
+            {loadingSummary ? (
+              <div className="flex items-center gap-1.5 text-xs text-[#606070]">
+                <Loader2 className="w-3 h-3 animate-spin" />Analyzing changes...
+              </div>
+            ) : aiSummary ? (
+              <p className="text-xs text-[#a0a0b0] leading-relaxed whitespace-pre-line">{aiSummary}</p>
+            ) : (
+              <p className="text-xs text-[#606070] italic">No summary available.</p>
+            )}
           </div>
 
           {/* Reviews */}
