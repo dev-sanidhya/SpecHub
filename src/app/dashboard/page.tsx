@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FileText,
   Plus,
@@ -9,43 +10,75 @@ import {
   Clock,
   ChevronRight,
   Search,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { formatRelativeTime } from "@/lib/utils";
 
-// Demo data - will be replaced with Supabase queries
-const DEMO_DOCS = [
-  {
-    id: "1",
-    title: "Authentication Flow PRD",
-    current_version_number: 4,
-    updated_at: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
-    open_suggestions: 2,
-    created_by: "you",
-  },
-  {
-    id: "2",
-    title: "Onboarding Redesign Spec",
-    current_version_number: 2,
-    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    open_suggestions: 0,
-    created_by: "you",
-  },
-  {
-    id: "3",
-    title: "Notification System Requirements",
-    current_version_number: 1,
-    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    open_suggestions: 1,
-    created_by: "you",
-  },
-];
+interface Doc {
+  id: string;
+  title: string;
+  current_version_number: number;
+  updated_at: string;
+  open_suggestions: number;
+  created_by: string;
+}
+
+interface Workspace {
+  id: string;
+  name: string;
+}
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
 
-  const filtered = DEMO_DOCS.filter((d) =>
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Get or create workspace
+      const wsRes = await fetch("/api/workspace");
+      const ws = await wsRes.json();
+      setWorkspace(ws);
+
+      // Fetch docs for this workspace
+      const docsRes = await fetch(`/api/documents?workspace_id=${ws.id}`);
+      const docsData = await docsRes.json();
+      setDocs(docsData);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  async function createDoc() {
+    if (!workspace) return;
+    setCreating(true);
+    try {
+      const res = await fetch("/api/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspace_id: workspace.id, title: "Untitled" }),
+      });
+      const doc = await res.json();
+      router.push(`/dashboard/docs/${doc.id}`);
+    } catch (e) {
+      console.error(e);
+      setCreating(false);
+    }
+  }
+
+  const filtered = docs.filter((d) =>
     d.title.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -56,15 +89,13 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-[#f2f2f5]">Documents</h1>
           <p className="text-sm text-[#606070] mt-0.5">
-            {DEMO_DOCS.length} document{DEMO_DOCS.length !== 1 ? "s" : ""} in your workspace
+            {loading ? "Loading..." : `${docs.length} document${docs.length !== 1 ? "s" : ""} in your workspace`}
           </p>
         </div>
-        <Link href="/dashboard/docs/new">
-          <Button size="sm" className="gap-1.5">
-            <Plus className="w-4 h-4" />
-            New Document
-          </Button>
-        </Link>
+        <Button size="sm" className="gap-1.5" onClick={createDoc} loading={creating}>
+          <Plus className="w-4 h-4" />
+          New Document
+        </Button>
       </div>
 
       {/* Search */}
@@ -79,17 +110,23 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Docs list */}
-      {filtered.length === 0 ? (
+      {/* Loading state */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 text-[#363640] animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-20">
           <FileText className="w-10 h-10 text-[#363640] mx-auto mb-3" />
-          <p className="text-[#606070] text-sm">No documents found</p>
-          <Link href="/dashboard/docs/new" className="mt-4 inline-block">
-            <Button size="sm" variant="secondary" className="gap-1.5 mt-3">
+          <p className="text-[#606070] text-sm">
+            {search ? "No documents match your search" : "No documents yet"}
+          </p>
+          {!search && (
+            <Button size="sm" variant="secondary" className="gap-1.5 mt-4" onClick={createDoc} loading={creating}>
               <Plus className="w-3.5 h-3.5" />
               Create your first document
             </Button>
-          </Link>
+          )}
         </div>
       ) : (
         <div className="space-y-2">
@@ -104,9 +141,7 @@ export default function DashboardPage() {
                   <FileText className="w-4 h-4 text-indigo-400" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-sm font-medium text-[#f2f2f5] truncate">
-                    {doc.title}
-                  </h3>
+                  <h3 className="text-sm font-medium text-[#f2f2f5] truncate">{doc.title}</h3>
                   <div className="flex items-center gap-3 mt-0.5">
                     <span className="text-xs text-[#606070] flex items-center gap-1">
                       <Clock className="w-3 h-3" />
