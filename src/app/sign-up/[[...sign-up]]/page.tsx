@@ -51,12 +51,21 @@ export default function SignUpPage() {
   const handleSocial = async (provider: "oauth_github" | "oauth_google") => {
     if (!isLoaded) return;
     setSocialLoading(provider);
+    setError("");
     try {
       await signUp.authenticateWithRedirect({
-        strategy: provider, redirectUrl: "/sso-callback", redirectUrlComplete: "/dashboard",
+        strategy: provider,
+        redirectUrl: `${window.location.origin}/sso-callback`,
+        redirectUrlComplete: `${window.location.origin}/dashboard`,
       });
-    } catch { setSocialLoading(null); }
+    } catch (err: unknown) {
+      const clerkErr = err as { errors?: { message: string }[] };
+      setError(clerkErr.errors?.[0]?.message ?? "OAuth sign up failed. Try again.");
+      setSocialLoading(null);
+    }
   };
+
+  const busy = !isLoaded || loading || !!socialLoading;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -72,7 +81,11 @@ export default function SignUpPage() {
         </div>
 
         <div className="bg-surface border border-border rounded-xl p-8 shadow-xl">
-          {step === "form" ? (
+          {!isLoaded ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+            </div>
+          ) : step === "form" ? (
             <>
               <div className="mb-6 text-center">
                 <h1 className="text-xl font-semibold text-foreground">Create your account</h1>
@@ -80,8 +93,8 @@ export default function SignUpPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-6">
-                <button onClick={() => handleSocial("oauth_github")} disabled={!!socialLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border-2 bg-surface-2 text-foreground text-sm font-medium hover:bg-surface-3 transition-colors disabled:opacity-50"
+                <button onClick={() => handleSocial("oauth_github")} disabled={busy}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border-2 bg-surface-2 text-foreground text-sm font-medium hover:bg-surface-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {socialLoading === "oauth_github" ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -90,8 +103,8 @@ export default function SignUpPage() {
                   )}
                   GitHub
                 </button>
-                <button onClick={() => handleSocial("oauth_google")} disabled={!!socialLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border-2 bg-surface-2 text-foreground text-sm font-medium hover:bg-surface-3 transition-colors disabled:opacity-50"
+                <button onClick={() => handleSocial("oauth_google")} disabled={busy}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border-2 bg-surface-2 text-foreground text-sm font-medium hover:bg-surface-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {socialLoading === "oauth_google" ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -134,8 +147,8 @@ export default function SignUpPage() {
                   </div>
                 </div>
                 {error && <p className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
-                <button type="submit" disabled={loading}
-                  className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-60 text-white font-medium text-sm rounded-lg py-2.5 flex items-center justify-center gap-2 transition-colors"
+                <button type="submit" disabled={busy}
+                  className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium text-sm rounded-lg py-2.5 flex items-center justify-center gap-2 transition-colors"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {loading ? "Creating account..." : "Continue"}
