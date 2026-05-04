@@ -1,188 +1,260 @@
 import Link from "next/link";
-import { ArrowRight, GitPullRequest, History, Sparkles, Shield, Users, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  GitPullRequest,
+  History,
+  Shield,
+  Sparkles,
+  Users,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const FEATURES = [
   {
     icon: GitPullRequest,
-    title: "PR-style suggestions",
-    desc: "Propose changes to any doc. Reviewers see a clean diff, discuss inline, and approve or reject - just like GitHub PRs but for product specs.",
+    title: "Review specs like pull requests",
+    desc: "Every proposed change has a title, discussion, approvals, and a merge history your team can actually trust.",
   },
   {
     icon: History,
-    title: "Full version history",
-    desc: "Every version is a snapshot. Jump back to v1, compare v3 vs v7, or see what the PRD looked like before that big pivot.",
+    title: "Understand version drift fast",
+    desc: "Jump between versions, compare snapshots, and share exactly what changed without dumping a PDF in Slack.",
   },
   {
     icon: Sparkles,
-    title: "AI-written changelogs",
-    desc: "When a suggestion merges, Claude writes the changelog. Scope expanded to mobile. Auth simplified. Launch moved to Q3. In plain English.",
+    title: "AI that writes useful summaries",
+    desc: "Merged changes get plain-English changelogs and contradiction checks instead of another admin task for PMs.",
   },
   {
     icon: Shield,
-    title: "Contradiction detection",
-    desc: "Claude reads your whole doc and flags conflicts. Section 2 says mobile-first. Section 6 is desktop-only. Caught before it ships wrong.",
+    title: "Catch conflicts before delivery",
+    desc: "Flag inconsistent requirements while editing, before product, design, and engineering each implement a different truth.",
   },
   {
     icon: Users,
-    title: "Approval workflows",
-    desc: "Set who needs to sign off. PM + design + eng lead must all approve before a change merges. The audit trail is permanent.",
+    title: "Make approvals explicit",
+    desc: "Keep sign-off visible so stakeholder feedback is part of the document lifecycle, not trapped in private threads.",
   },
   {
     icon: Zap,
-    title: "Shareable diff links",
-    desc: "Share a link to any diff view without login. Your stakeholder sees exactly what changed between v2 and v5. No account needed.",
+    title: "Share decisions with context",
+    desc: "Send a diff link, not a meeting invite. Everyone sees the reasoning, the edit, and the merged result in one place.",
   },
 ];
 
-const DIFF_DEMO = [
-  { type: "same", text: "## Authentication Flow" },
-  { type: "same", text: "" },
-  { type: "remove", text: "Users must complete a 6-step onboarding before accessing the dashboard." },
-  { type: "add", text: "Users access the dashboard immediately after signup. Onboarding is optional." },
-  { type: "same", text: "" },
-  { type: "same", text: "### Requirements" },
-  { type: "same", text: "- Google OAuth and GitHub OAuth supported" },
-  { type: "remove", text: "- Email verification required before first login" },
-  { type: "add", text: "- Email verification runs async, does not block access" },
-  { type: "same", text: "- Session expires after 30 days of inactivity" },
+const STATS = [
+  { value: "v1 to v27", label: "Document history that stays readable" },
+  { value: "< 30s", label: "To open a doc and submit a suggestion" },
+  { value: "1 source", label: "Of truth for product, design, and engineering" },
+];
+
+const DIFF = [
+  { kind: "same", text: "## Authentication flow" },
+  { kind: "same", text: "" },
+  { kind: "remove", text: "Users must complete onboarding before accessing the dashboard." },
+  { kind: "add", text: "Users land in the dashboard immediately after signup. Onboarding is contextual." },
+  { kind: "same", text: "" },
+  { kind: "same", text: "### Requirements" },
+  { kind: "same", text: "- Support GitHub OAuth and Google OAuth" },
+  { kind: "remove", text: "- Block first login until email verification finishes" },
+  { kind: "add", text: "- Run email verification asynchronously without blocking first use" },
+  { kind: "same", text: "- Session expires after 30 days of inactivity" },
 ];
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b border-border bg-background/80 backdrop-blur-md">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-indigo-500 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">S</span>
-          </div>
-          <span className="font-semibold text-foreground">SpecHub</span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Link href="/sign-in">
-            <Button variant="ghost" size="sm">Sign in</Button>
-          </Link>
-          <Link href="/sign-up">
-            <Button size="sm">Get started free</Button>
-          </Link>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="pt-36 pb-24 px-6 text-center max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 text-xs text-indigo-500 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-3 py-1.5 mb-6">
-          <Sparkles className="w-3 h-3" />
-          AI-powered version control for product docs
-        </div>
-        <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-tight mb-6">
-          GitHub for your{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">PRDs</span>
-        </h1>
-        <p className="text-lg text-foreground-2 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Propose, review, and approve changes to product specs the same way your devs ship code. Full version history, PR-style diffs, approval workflows, and an AI that writes the changelog for you.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link href="/sign-up">
-            <Button size="lg" className="gap-2 w-full sm:w-auto">
-              Start building free <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
-          <Link href="/sign-in">
-            <Button variant="secondary" size="lg" className="w-full sm:w-auto">Sign in</Button>
-          </Link>
-        </div>
-        <p className="text-xs text-foreground-3 mt-4">Free for up to 3 docs. No credit card required.</p>
-      </section>
-
-      {/* Diff demo */}
-      <section className="px-6 pb-24 max-w-3xl mx-auto">
-        <div className="rounded-xl border border-border-2 bg-surface-2 overflow-hidden shadow-2xl">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border-2 bg-surface">
-            <div className="flex items-center gap-2">
-              <GitPullRequest className="w-4 h-4 text-indigo-500" />
-              <span className="text-sm text-foreground font-medium">Simplify auth onboarding</span>
+      <header className="sticky top-0 z-50 border-b border-border/70 bg-background/75 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500 shadow-[0_16px_40px_-18px_rgba(99,102,241,0.65)]">
+              <span className="text-sm font-bold text-white">S</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">merged</span>
-              <span className="text-xs text-foreground-3">v3 - v4</span>
+            <div>
+              <p className="text-base font-semibold tracking-tight">SpecHub</p>
+              <p className="text-xs text-foreground-3">Product specs with version control discipline</p>
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/sign-in">
+              <Button variant="ghost" size="sm">Sign in</Button>
+            </Link>
+            <Link href="/sign-up">
+              <Button size="sm">Start free</Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section className="mx-auto grid max-w-7xl gap-14 px-6 pb-24 pt-16 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:pt-24">
+          <div>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-500">
+              <Sparkles className="h-3.5 w-3.5" />
+              Review product docs with the same rigor as code
+            </div>
+
+            <h1 className="max-w-3xl text-5xl font-semibold tracking-[-0.04em] text-foreground sm:text-6xl">
+              Stop shipping specs through document sprawl.
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-foreground-2">
+              SpecHub turns product requirements into a reviewable workflow: version history, suggestion diffs,
+              approvals, and AI summaries that help teams move faster without losing the decision trail.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/sign-up">
+                <Button size="lg" className="min-w-44 gap-2">
+                  Create workspace <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/sign-in">
+                <Button variant="secondary" size="lg" className="min-w-44">
+                  Open dashboard
+                </Button>
+              </Link>
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-4 text-sm text-foreground-2">
+              <div className="inline-flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                No credit card
+              </div>
+              <div className="inline-flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                OAuth ready
+              </div>
+              <div className="inline-flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                Works for PM, design, and eng
+              </div>
+            </div>
+
+            <div className="mt-12 grid gap-4 sm:grid-cols-3">
+              {STATS.map((stat) => (
+                <div key={stat.label} className="panel rounded-2xl p-5">
+                  <p className="text-2xl font-semibold tracking-tight text-foreground">{stat.value}</p>
+                  <p className="mt-2 text-sm leading-6 text-foreground-2">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="font-mono text-sm p-4 space-y-0.5">
-            {DIFF_DEMO.map((line, i) => (
-              <div
-                key={i}
-                className={`px-3 py-0.5 rounded text-sm leading-relaxed ${
-                  line.type === "add"
-                    ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                    : line.type === "remove"
-                    ? "bg-red-500/10 text-red-600 dark:text-red-400 line-through"
-                    : "text-foreground-2"
-                }`}
-              >
-                <span className="select-none mr-2 opacity-50">
-                  {line.type === "add" ? "+" : line.type === "remove" ? "-" : " "}
-                </span>
-                {line.text || " "}
+
+          <div className="relative">
+            <div className="grid-overlay panel overflow-hidden rounded-[2rem] border border-border/80 p-4">
+              <div className="rounded-[1.5rem] border border-border bg-surface">
+                <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Spec change review</p>
+                    <p className="text-xs text-foreground-3">Simplify auth onboarding</p>
+                  </div>
+                  <span className="rounded-full bg-green-500/12 px-3 py-1 text-xs font-semibold text-green-600 dark:text-green-400">
+                    merged
+                  </span>
+                </div>
+
+                <div className="space-y-3 p-5">
+                  <div className="rounded-2xl bg-surface-2 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground-3">Diff preview</span>
+                      <span className="text-xs text-foreground-3">v3 → v4</span>
+                    </div>
+                    <div className="space-y-1 font-mono text-[13px] leading-6">
+                      {DIFF.map((line, index) => (
+                        <div
+                          key={`${line.kind}-${index}`}
+                          className={
+                            line.kind === "add"
+                              ? "rounded-lg bg-green-500/10 px-3 py-1 text-green-600 dark:text-green-400"
+                              : line.kind === "remove"
+                                ? "rounded-lg bg-red-500/10 px-3 py-1 text-red-600 line-through dark:text-red-400"
+                                : "px-3 py-1 text-foreground-2"
+                          }
+                        >
+                          <span className="mr-2 opacity-50">
+                            {line.kind === "add" ? "+" : line.kind === "remove" ? "-" : " "}
+                          </span>
+                          {line.text || " "}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-indigo-500/8 p-4">
+                    <div className="mb-2 flex items-center gap-2 text-indigo-500">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="text-xs font-semibold uppercase tracking-[0.14em]">AI summary</span>
+                    </div>
+                    <p className="text-sm leading-6 text-foreground-2">
+                      Onboarding moved from blocking to contextual. First-use friction drops while email verification and
+                      access policies remain intact.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-6 pb-24">
+          <div className="mb-10 max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-500">Why teams use it</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              A better operating model for product documentation.
+            </h2>
+            <p className="mt-4 text-base leading-7 text-foreground-2">
+              The weak point in most product stacks is not writing. It is coordination, review, and change visibility.
+              SpecHub is designed around that problem.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="panel rounded-3xl p-6">
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/12 text-indigo-500">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+                <p className="mt-3 text-sm leading-6 text-foreground-2">{desc}</p>
               </div>
             ))}
           </div>
-          <div className="px-4 py-3 border-t border-border-2 bg-indigo-500/5 flex items-start gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500 mt-0.5 shrink-0" />
-            <p className="text-xs text-indigo-500 leading-relaxed">
-              <span className="font-semibold">AI changelog - </span>
-              Onboarding moved from blocking to optional. Email verification now async. Reduces signup friction by removing the 6-step gate before dashboard access.
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Features */}
-      <section className="px-6 pb-24 max-w-5xl mx-auto">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-bold mb-3 text-foreground">Everything your team needs</h2>
-          <p className="text-foreground-2">Built for PMs who want the same rigour in docs as their devs have in code.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
-            <div
-              key={title}
-              className="p-5 rounded-xl border border-border-2 bg-surface hover:border-indigo-500/30 transition-colors group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-4 group-hover:bg-indigo-500/20 transition-colors">
-                <Icon className="w-[18px] h-[18px] text-indigo-500" />
+        <section className="mx-auto max-w-5xl px-6 pb-28">
+          <div className="panel rounded-[2rem] px-8 py-10 sm:px-12">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-500">Ready to replace the doc mess?</p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground">
+                  Build a product memory your team can actually operate from.
+                </h2>
+                <p className="mt-4 text-base leading-7 text-foreground-2">
+                  Start with one document, one workflow, and one place where product decisions stop getting lost.
+                </p>
               </div>
-              <h3 className="font-semibold text-foreground mb-1.5">{title}</h3>
-              <p className="text-sm text-foreground-2 leading-relaxed">{desc}</p>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link href="/sign-up">
+                  <Button size="lg" className="min-w-44 gap-2">
+                    Start free <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/sign-in">
+                  <Button size="lg" variant="secondary" className="min-w-44">
+                    Sign in
+                  </Button>
+                </Link>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="px-6 pb-24 max-w-2xl mx-auto text-center">
-        <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-10">
-          <h2 className="text-3xl font-bold mb-3 text-foreground">Start in 30 seconds</h2>
-          <p className="text-foreground-2 mb-8">Free for small teams. No credit card. Sign in with Google or GitHub.</p>
-          <Link href="/sign-up">
-            <Button size="lg" className="gap-2">
-              Get started free <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border px-6 py-6 text-center">
-        <p className="text-xs text-foreground-3">
-          Built by{" "}
-          <a href="https://x.com/iisanidhya" target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:text-indigo-400">
-            @iisanidhya
-          </a>
-        </p>
-      </footer>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
