@@ -61,29 +61,46 @@ export default function DocPage() {
 
   useEffect(() => {
     if (isNew) return;
-    setLoading(true);
-    Promise.all([
-      fetch(`/api/documents/${docId}`).then((r) => r.json()),
-      fetch(`/api/documents/${docId}/versions`).then((r) => r.json()),
-      fetch(`/api/documents/${docId}/suggestions`).then((r) => r.json()),
-    ]).then(([docData, versionsData, suggestionsData]) => {
-      setDoc(docData);
-      setTitle(docData.title ?? "Untitled");
-      if (docData.currentVersion?.content) {
-        const c = docData.currentVersion.content as object;
-        setCurrentContent(c);
-        setSuggestContent(c);
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const [docData, versionsData, suggestionsData] = await Promise.all([
+          fetch(`/api/documents/${docId}`).then((r) => r.json()),
+          fetch(`/api/documents/${docId}/versions`).then((r) => r.json()),
+          fetch(`/api/documents/${docId}/suggestions`).then((r) => r.json()),
+        ]);
+
+        if (cancelled) return;
+
+        setDoc(docData);
+        setTitle(docData.title ?? "Untitled");
+        if (docData.currentVersion?.content) {
+          const c = docData.currentVersion.content as object;
+          setCurrentContent(c);
+          setSuggestContent(c);
+        }
+        setVersions(versionsData);
+        if (versionsData.length > 0) setSelectedVersion(versionsData[0]);
+        setSuggestions(suggestionsData);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setVersions(versionsData);
-      if (versionsData.length > 0) setSelectedVersion(versionsData[0]);
-      setSuggestions(suggestionsData);
-    }).catch(console.error).finally(() => setLoading(false));
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [docId, isNew]);
 
   useEffect(() => {
     if (!selectedVersion) return;
     if (doc && selectedVersion.id === doc.current_version_id) {
-      setSelectedVersionContent(currentContent); return;
+      const timer = setTimeout(() => setSelectedVersionContent(currentContent), 0);
+      return () => clearTimeout(timer);
     }
     fetch(`/api/documents/${docId}/versions/${selectedVersion.id}`)
       .then((r) => r.json()).then((v) => setSelectedVersionContent(v.content ?? null))

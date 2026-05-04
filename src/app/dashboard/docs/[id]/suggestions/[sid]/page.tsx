@@ -62,7 +62,13 @@ export default function SuggestionPage() {
     }
   }, [sid]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [load]);
 
   const myReview = reviews.find((r) => r.reviewer_id === user?.id);
   const approvalCount = reviews.filter((r) => r.decision === "approved").length;

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getAuthAndClient, ok, err } from "@/lib/api";
-import { generateChangelog, summarizeDiff } from "@/lib/claude";
+import { generateChangelog } from "@/lib/claude";
 
 // GET /api/suggestions/:id - full suggestion with base version content + AI diff summary
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {

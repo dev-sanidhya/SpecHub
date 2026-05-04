@@ -56,7 +56,11 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timer = setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [loadData]);
 
   async function createDoc() {
