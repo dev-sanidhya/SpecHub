@@ -2,42 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const [dark, setDark] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
-    const stored = localStorage.getItem("spechub-theme") ?? "dark";
-    const isDark = stored === "dark";
-    setDark(isDark);
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
     setMounted(true);
   }, []);
 
   function toggle() {
-    const isDark = document.documentElement.classList.contains("dark");
-    if (isDark) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("spechub-theme", "light");
-      setDark(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("spechub-theme", "dark");
-      setDark(true);
-    }
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }
 
   if (!mounted) return <div className="w-8 h-8" />;
 
+  const dark = resolvedTheme !== "light";
+
   return (
     <button
+      type="button"
       onClick={toggle}
-      className={`w-8 h-8 flex items-center justify-center rounded-lg text-foreground-3 hover:text-foreground hover:bg-surface-3 transition-colors ${className}`}
+      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/90 text-foreground-2 shadow-[0_10px_30px_-18px_var(--shadow-color)] backdrop-blur transition-all hover:-translate-y-0.5 hover:border-border-2 hover:bg-surface-2 hover:text-foreground ${className}`}
       title={dark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
