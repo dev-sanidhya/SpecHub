@@ -126,6 +126,111 @@ body {
   padding: 0.1em 0.2em;
 }
 
+/* Clerk dark theme overrides */
+.cl-rootBox,
+.cl-card,
+.cl-cardBox,
+.cl-signIn-root,
+.cl-signUp-root {
+  background-color: #0e0e12 !important;
+  border: 1px solid #1e1e24 !important;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6) !important;
+  color: #f2f2f5 !important;
+}
+
+.cl-headerTitle,
+.cl-headerSubtitle__signIn,
+.cl-headerSubtitle__signUp,
+.cl-headerSubtitle {
+  color: #f2f2f5 !important;
+}
+
+.cl-headerSubtitle {
+  color: #a0a0b0 !important;
+}
+
+.cl-socialButtonsBlockButton,
+.cl-socialButtonsIconButton {
+  background-color: #111114 !important;
+  border: 1px solid #2a2a32 !important;
+  color: #f2f2f5 !important;
+}
+
+.cl-socialButtonsBlockButtonText,
+.cl-socialButtonsBlockButtonArrow {
+  color: #f2f2f5 !important;
+}
+
+.cl-dividerLine {
+  background-color: #2a2a32 !important;
+}
+
+.cl-dividerText {
+  color: #606070 !important;
+}
+
+.cl-formFieldLabel {
+  color: #a0a0b0 !important;
+}
+
+.cl-formFieldInput {
+  background-color: #111114 !important;
+  border: 1px solid #2a2a32 !important;
+  color: #f2f2f5 !important;
+  caret-color: #f2f2f5 !important;
+}
+
+.cl-formFieldInput:focus {
+  border-color: rgba(99,102,241,0.5) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.15) !important;
+}
+
+.cl-formFieldInput::placeholder {
+  color: #606070 !important;
+}
+
+.cl-formButtonPrimary {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+}
+
+.cl-formButtonPrimary:hover {
+  background-color: #4f52e0 !important;
+}
+
+.cl-footerActionLink {
+  color: #818cf8 !important;
+}
+
+.cl-footerActionText {
+  color: #606070 !important;
+}
+
+.cl-identityPreviewText {
+  color: #f2f2f5 !important;
+}
+
+.cl-identityPreviewEditButton {
+  color: #818cf8 !important;
+}
+
+.cl-formFieldInputShowPasswordButton {
+  color: #606070 !important;
+}
+
+.cl-alertText,
+.cl-formFieldErrorText {
+  color: #f87171 !important;
+}
+
+.cl-internal-b3fm6y,
+.cl-footer,
+.cl-footerPages,
+.cl-footerPagesLink {
+  color: #606070 !important;
+}
+
 /* Diff view styles */
 .diff-add {
   background: var(--add);
