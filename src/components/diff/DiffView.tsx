@@ -3,11 +3,7 @@
 import { useMemo } from "react";
 import diff_match_patch from "diff-match-patch";
 
-interface DiffViewProps {
-  oldText: string;
-  newText: string;
-}
-
+interface DiffViewProps { oldText: string; newText: string; }
 type DiffOp = -1 | 0 | 1;
 
 function contentToText(content: object | null | undefined): string {
@@ -16,13 +12,9 @@ function contentToText(content: object | null | undefined): string {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const node = content as any;
     if (node.type === "text") return node.text ?? "";
-    if (node.content) {
-      return node.content.map(contentToText).join(node.type === "paragraph" ? "\n" : "");
-    }
+    if (node.content) return node.content.map(contentToText).join(node.type === "paragraph" ? "\n" : "");
     return "";
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
 
 export function jsonToText(content: object | null | undefined): string {
@@ -31,13 +23,8 @@ export function jsonToText(content: object | null | undefined): string {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const doc = content as any;
     if (!doc.content) return "";
-    return doc.content
-      .map((node: object) => contentToText(node))
-      .join("\n\n")
-      .trim();
-  } catch {
-    return "";
-  }
+    return doc.content.map((node: object) => contentToText(node)).join("\n\n").trim();
+  } catch { return ""; }
 }
 
 export function DiffView({ oldText, newText }: DiffViewProps) {
@@ -52,25 +39,9 @@ export function DiffView({ oldText, newText }: DiffViewProps) {
   return (
     <div className="font-mono text-sm leading-relaxed p-4 whitespace-pre-wrap break-words">
       {diffs.map(([op, text], i: number) => {
-        if (op === 0) {
-          return (
-            <span key={i} className="text-[#a0a0b0]">
-              {text}
-            </span>
-          );
-        }
-        if (op === 1) {
-          return (
-            <span key={i} className="bg-green-500/15 text-green-400 rounded px-0.5">
-              {text}
-            </span>
-          );
-        }
-        return (
-          <span key={i} className="bg-red-500/15 text-red-400 line-through rounded px-0.5">
-            {text}
-          </span>
-        );
+        if (op === 0) return <span key={i} className="text-foreground-2">{text}</span>;
+        if (op === 1) return <span key={i} className="bg-green-500/15 text-green-600 dark:text-green-400 rounded px-0.5">{text}</span>;
+        return <span key={i} className="bg-red-500/15 text-red-600 dark:text-red-400 line-through rounded px-0.5">{text}</span>;
       })}
     </div>
   );

@@ -18,15 +18,15 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed select-none",
           {
-            "bg-indigo-500 text-white hover:bg-indigo-600 active:scale-[0.98]":
+            "bg-accent text-white hover:bg-[var(--accent-hover)] active:scale-[0.98]":
               variant === "primary",
-            "bg-[#18181c] text-[#f2f2f5] border border-[#2a2a32] hover:bg-[#222228] active:scale-[0.98]":
+            "bg-surface-3 text-foreground border border-border-2 hover:bg-surface-3 active:scale-[0.98]":
               variant === "secondary",
-            "text-[#a0a0b0] hover:text-[#f2f2f5] hover:bg-[#18181c] active:scale-[0.98]":
+            "text-foreground-2 hover:text-foreground hover:bg-surface-3 active:scale-[0.98]":
               variant === "ghost",
-            "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 active:scale-[0.98]":
+            "bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 active:scale-[0.98]":
               variant === "danger",
-            "border border-[#2a2a32] text-[#f2f2f5] hover:border-indigo-500/50 hover:text-indigo-400 active:scale-[0.98]":
+            "border border-border-2 text-foreground hover:border-indigo-500/50 hover:text-accent active:scale-[0.98]":
               variant === "outline",
           },
           {
