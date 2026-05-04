@@ -23,10 +23,10 @@ function ToolbarButton({ onClick, active, title, children }: ToolbarButtonProps)
       onMouseDown={(e) => { e.preventDefault(); onClick(); }}
       title={title}
       className={cn(
-        "w-7 h-7 flex items-center justify-center rounded text-sm transition-colors",
+        "flex h-9 w-9 items-center justify-center rounded-xl text-sm transition-colors",
         active
-          ? "bg-indigo-500/20 text-indigo-500"
-          : "text-foreground-2 hover:text-foreground hover:bg-surface-3"
+          ? "bg-indigo-500/15 text-indigo-500 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.18)]"
+          : "text-foreground-2 hover:bg-surface-3 hover:text-foreground"
       )}
     >
       {children}
@@ -35,13 +35,13 @@ function ToolbarButton({ onClick, active, title, children }: ToolbarButtonProps)
 }
 
 function Divider() {
-  return <div className="w-px h-5 bg-border-2 mx-1" />;
+  return <div className="mx-1 h-5 w-px bg-border-2" />;
 }
 
 export function Toolbar({ editor }: ToolbarProps) {
   if (!editor) return null;
   return (
-    <div className="flex items-center flex-wrap gap-0.5 px-3 py-2 border-b border-border bg-surface">
+    <div className="sticky top-0 z-20 flex items-center flex-wrap gap-0.5 border-b border-border bg-surface/90 px-3 py-2 backdrop-blur-xl">
       <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold"><Bold className="w-3.5 h-3.5" /></ToolbarButton>
       <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic"><Italic className="w-3.5 h-3.5" /></ToolbarButton>
       <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")} title="Underline"><Underline className="w-3.5 h-3.5" /></ToolbarButton>

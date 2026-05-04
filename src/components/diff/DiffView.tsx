@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import diff_match_patch from "diff-match-patch";
+import { cn } from "@/lib/utils";
 
 interface DiffViewProps { oldText: string; newText: string; }
 type DiffOp = -1 | 0 | 1;
@@ -36,13 +37,37 @@ export function DiffView({ oldText, newText }: DiffViewProps) {
     return d as [DiffOp, string][];
   }, [oldText, newText]);
 
+  const segments = diffs.flatMap(([op, text]) =>
+    text.split("\n").map((line, index, arr) => ({
+      op,
+      text: line,
+      endsWithBreak: index < arr.length - 1,
+    }))
+  );
+
   return (
-    <div className="font-mono text-sm leading-relaxed p-4 whitespace-pre-wrap break-words">
-      {diffs.map(([op, text], i: number) => {
-        if (op === 0) return <span key={i} className="text-foreground-2">{text}</span>;
-        if (op === 1) return <span key={i} className="bg-green-500/15 text-green-600 dark:text-green-400 rounded px-0.5">{text}</span>;
-        return <span key={i} className="bg-red-500/15 text-red-600 dark:text-red-400 line-through rounded px-0.5">{text}</span>;
-      })}
+    <div className="overflow-auto bg-surface">
+      <div className="min-w-full divide-y divide-border/60 font-mono text-sm">
+        {segments.map((segment, index) => {
+          const marker = segment.op === 1 ? "+" : segment.op === -1 ? "-" : " ";
+          const tone =
+            segment.op === 1
+              ? "bg-green-500/10 text-green-600 dark:text-green-400"
+              : segment.op === -1
+                ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                : "text-foreground-2";
+
+          return (
+            <div key={`${index}-${segment.text}`} className={cn("grid grid-cols-[40px_1fr] gap-0", tone)}>
+              <div className="border-r border-border/60 px-3 py-2 text-center opacity-60">{marker}</div>
+              <div className={cn("px-4 py-2 whitespace-pre-wrap break-words", segment.op === -1 && "line-through")}>
+                {segment.text || " "}
+                {segment.endsWithBreak ? "\n" : ""}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

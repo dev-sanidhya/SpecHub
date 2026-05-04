@@ -110,7 +110,7 @@ export default function SuggestionPage() {
   }, [comment, sid, load]);
 
   if (loading || !suggestion) {
-    return <div className="flex items-center justify-center h-screen"><Loader2 className="w-6 h-6 text-border-3 animate-spin" /></div>;
+    return <div className="flex h-screen items-center justify-center"><Loader2 className="w-6 h-6 text-border-3 animate-spin" /></div>;
   }
 
   const oldText = jsonToText(suggestion.baseVersion?.content ?? null);
@@ -118,9 +118,9 @@ export default function SuggestionPage() {
   const isOpen = suggestion.status === "open";
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex h-screen flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-border bg-surface shrink-0">
+      <div className="flex items-center gap-3 border-b border-border bg-background/80 px-4 py-4 backdrop-blur-xl lg:px-6 shrink-0">
         <Link href={`/dashboard/docs/${docId}`}>
           <Button variant="ghost" size="sm" className="gap-1.5"><ChevronLeft className="w-4 h-4" />Back to doc</Button>
         </Link>
@@ -132,11 +132,11 @@ export default function SuggestionPage() {
         </Badge>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
         {/* Main: diff + discussion */}
         <div className="flex-1 overflow-auto">
           {/* Meta */}
-          <div className="px-6 py-4 border-b border-border">
+          <div className="border-b border-border px-4 py-4 lg:px-6">
             {suggestion.description && <p className="text-sm text-foreground-2 leading-relaxed mb-2">{suggestion.description}</p>}
             <p className="text-xs text-foreground-3">
               Proposed by <span className="text-foreground-2">{suggestion.created_by.slice(0, 12)}</span>
@@ -146,15 +146,15 @@ export default function SuggestionPage() {
           </div>
 
           {/* Diff */}
-          <div className="px-6 py-4 border-b border-border">
+          <div className="border-b border-border px-4 py-4 lg:px-6">
             <p className="text-xs text-foreground-3 font-medium uppercase tracking-wide mb-3">Changes</p>
-            <div className="rounded-lg border border-border-2 bg-surface-2 overflow-hidden">
+            <div className="panel overflow-hidden rounded-[1.5rem]">
               <DiffView oldText={oldText} newText={newText} />
             </div>
           </div>
 
           {/* Comments */}
-          <div className="px-6 py-4">
+          <div className="px-4 py-4 lg:px-6">
             <p className="text-xs text-foreground-3 font-medium uppercase tracking-wide mb-3 flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5" />Discussion ({comments.length})
             </p>
@@ -177,7 +177,7 @@ export default function SuggestionPage() {
             </div>
             <div className="flex gap-2">
               <textarea placeholder="Add a comment..." value={comment} onChange={(e) => setComment(e.target.value)} rows={2}
-                className="flex-1 px-3 py-2 rounded-lg bg-surface-2 border border-border-2 text-sm text-foreground placeholder:text-foreground-3 focus:outline-none focus:border-indigo-500/40 transition-colors resize-none"
+                className="flex-1 resize-none rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-foreground placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
               />
               <Button size="sm" variant="secondary" onClick={handleComment} loading={submittingComment} disabled={!comment.trim()} className="self-end">Post</Button>
             </div>
@@ -185,7 +185,7 @@ export default function SuggestionPage() {
         </div>
 
         {/* Right panel */}
-        <div className="w-72 shrink-0 border-l border-border bg-surface overflow-auto flex flex-col">
+        <div className="flex w-80 shrink-0 flex-col overflow-auto border-l border-border bg-surface/80 backdrop-blur-xl">
           {/* Actions */}
           <div className="p-4 border-b border-border">
             {isOpen ? (

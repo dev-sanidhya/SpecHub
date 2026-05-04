@@ -176,17 +176,17 @@ export default function DocPage() {
   const suggestText = jsonToText(suggestContent);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen"><Loader2 className="w-6 h-6 text-border-3 animate-spin" /></div>;
+    return <div className="flex h-screen items-center justify-center"><Loader2 className="w-6 h-6 text-border-3 animate-spin" /></div>;
   }
 
   if (isNew) {
     return (
-      <div className="flex flex-col h-screen">
-        <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-surface shrink-0">
+      <div className="flex h-screen flex-col">
+        <div className="flex items-center justify-between border-b border-border bg-background/80 px-4 py-4 backdrop-blur-xl lg:px-6 shrink-0">
           <div className="flex items-center gap-3 flex-1">
             <Link href="/dashboard"><Button variant="ghost" size="sm" className="gap-1.5"><ChevronLeft className="w-4 h-4" />Back</Button></Link>
             <input type="text" placeholder="Untitled document" value={title} onChange={(e) => setTitle(e.target.value)}
-              className="bg-transparent text-foreground font-semibold text-base focus:outline-none placeholder:text-border-3 flex-1" autoFocus />
+              className="flex-1 bg-transparent text-lg font-semibold tracking-tight text-foreground placeholder:text-border-3 focus:outline-none" autoFocus />
           </div>
           <Button size="sm" onClick={handleSaveNew} loading={saving} className="gap-1.5"><Save className="w-4 h-4" />Save</Button>
         </div>
@@ -198,13 +198,13 @@ export default function DocPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex h-screen flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-surface shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center justify-between border-b border-border bg-background/80 px-4 py-4 backdrop-blur-xl lg:px-6 shrink-0">
+        <div className="flex min-w-0 items-center gap-3">
           <Link href="/dashboard"><Button variant="ghost" size="sm" className="gap-1.5"><ChevronLeft className="w-4 h-4" />Back</Button></Link>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={handleTitleBlur}
-            className="bg-transparent text-foreground font-semibold text-base focus:outline-none min-w-0 truncate" />
+            className="min-w-0 truncate bg-transparent text-lg font-semibold tracking-tight text-foreground focus:outline-none" />
           <Badge variant="default">v{doc?.current_version_number ?? 1}</Badge>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -232,7 +232,7 @@ export default function DocPage() {
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-auto flex flex-col">
+        <div className="flex flex-1 flex-col overflow-auto">
 
           {mode === "read" && (
             <DocEditor content={currentContent} editable onChange={handleContentChange} />
@@ -242,20 +242,20 @@ export default function DocPage() {
             <div className="flex flex-col h-full">
               {showSuggestForm ? (
                 <>
-                  <div className="flex-1 overflow-auto px-6 py-4">
-                    <p className="text-xs text-foreground-3 font-medium uppercase tracking-wide mb-3">Preview changes</p>
-                    <div className="rounded-lg border border-border-2 bg-surface-2 overflow-hidden">
+                  <div className="flex-1 overflow-auto px-4 py-4 lg:px-6">
+                    <p className="mb-3 text-xs font-medium uppercase tracking-wide text-foreground-3">Preview changes</p>
+                    <div className="panel overflow-hidden rounded-[1.5rem]">
                       <DiffView oldText={currentText} newText={suggestText} />
                     </div>
                   </div>
-                  <div className="border-t border-border p-4 bg-surface space-y-3">
+                  <div className="space-y-3 border-t border-border bg-surface px-4 py-4 lg:px-6">
                     <input type="text" placeholder="Suggestion title (required)" value={suggestTitle}
                       onChange={(e) => setSuggestTitle(e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg bg-surface-3 border border-border-2 text-sm text-foreground placeholder:text-foreground-3 focus:outline-none focus:border-indigo-500/40 transition-colors"
+                      className="h-11 w-full rounded-2xl border border-border bg-surface-2 px-4 text-sm text-foreground placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
                     />
                     <textarea placeholder="Why this change? (optional)" value={suggestDesc}
                       onChange={(e) => setSuggestDesc(e.target.value)} rows={2}
-                      className="w-full px-3 py-2 rounded-lg bg-surface-3 border border-border-2 text-sm text-foreground placeholder:text-foreground-3 focus:outline-none focus:border-indigo-500/40 transition-colors resize-none"
+                      className="w-full resize-none rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-foreground placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
                     />
                     <div className="flex items-center gap-2 justify-end">
                       <Button variant="ghost" size="sm" onClick={() => setShowSuggestForm(false)}><X className="w-4 h-4" />Cancel</Button>
@@ -267,8 +267,8 @@ export default function DocPage() {
                 </>
               ) : (
                 <>
-                  <div className="px-4 py-2 border-b border-border bg-surface flex items-center justify-between">
-                    <p className="text-xs text-amber-500 flex items-center gap-1.5">
+                  <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:px-6">
+                    <p className="flex items-center gap-1.5 text-xs text-amber-500">
                       <PenLine className="w-3 h-3" />Suggest mode - your changes will be reviewed before merging
                     </p>
                     <Button size="sm" onClick={() => setShowSuggestForm(true)} className="gap-1.5">
@@ -331,7 +331,7 @@ export default function DocPage() {
 
         {/* Right panel */}
         {mode !== "history" && (
-          <div className="w-72 shrink-0 border-l border-border bg-surface overflow-auto flex flex-col">
+            <div className="flex w-80 shrink-0 flex-col overflow-auto border-l border-border bg-surface/80 backdrop-blur-xl">
 
             {/* Contradiction detection panel */}
             {mode === "read" && (
@@ -349,9 +349,9 @@ export default function DocPage() {
                   {!checkingContradictions && contradictions.length > 0 && <Badge variant="warning">{contradictions.length}</Badge>}
                 </div>
                 {contradictions.length > 0 && (
-                  <div className="px-3 pb-3 space-y-2">
+                  <div className="space-y-2 px-3 pb-3">
                     {contradictions.map((c, i) => (
-                      <div key={i} className="p-2.5 rounded-lg bg-amber-500/8 border border-amber-500/20">
+                      <div key={i} className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-3">
                         <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mb-1 flex items-start gap-1.5">
                           <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />{c.issue}
                         </p>
@@ -384,7 +384,7 @@ export default function DocPage() {
               ) : (
                 suggestions.map((s) => (
                   <Link key={s.id} href={`/dashboard/docs/${docId}/suggestions/${s.id}`}
-                    className="block p-3 rounded-lg border border-border hover:border-border-2 bg-surface-2 hover:bg-surface-3 transition-all"
+                    className="block rounded-2xl border border-border bg-surface-2 p-3 transition-all hover:border-border-2 hover:bg-surface-3"
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <span className="text-sm font-medium text-foreground leading-tight">{s.title}</span>
