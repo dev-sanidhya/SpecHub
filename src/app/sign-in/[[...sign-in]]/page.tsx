@@ -1,8 +1,8 @@
-"use client";
-
 import { SignIn } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { GitPullRequest, History, ShieldCheck } from "lucide-react";
+import { redirect } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const VALUE_POINTS = [
@@ -23,7 +23,13 @@ const VALUE_POINTS = [
   },
 ];
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  const { userId } = await auth();
+
+  if (userId) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.18),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.12),transparent_24%)]" />
@@ -87,7 +93,9 @@ export default function SignInPage() {
               routing="path"
               signUpUrl="/sign-up"
               fallbackRedirectUrl="/dashboard"
+              forceRedirectUrl="/dashboard"
               signUpFallbackRedirectUrl="/dashboard"
+              signUpForceRedirectUrl="/dashboard"
             />
           </div>
         </section>

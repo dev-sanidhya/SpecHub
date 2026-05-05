@@ -1,10 +1,11 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
+import { SignOutButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, LayoutDashboard, Plus, Sparkles } from "lucide-react";
+import { FileText, LayoutDashboard, LogOut, Plus, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -72,13 +73,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="border-t border-border/80 px-4 py-4">
-            <div className="flex items-center gap-3 rounded-2xl bg-surface-2 px-3 py-3">
-              <UserButton />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">Your account</p>
-                <p className="text-xs text-foreground-3">Theme and access live here</p>
+            <div className="rounded-2xl bg-surface-2 px-3 py-3">
+              <div className="flex items-center gap-3">
+                <UserButton />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">Your account</p>
+                  <p className="text-xs text-foreground-3">Theme and session controls</p>
+                </div>
+                <ThemeToggle />
               </div>
-              <ThemeToggle />
+
+              <SignOutButton redirectUrl="/sign-in">
+                <button
+                  type="button"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-medium text-foreground-2 transition-colors hover:bg-surface-3 hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </SignOutButton>
             </div>
           </div>
         </aside>
@@ -103,6 +116,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     New
                   </div>
                 </Link>
+                <UserButton />
+                <SignOutButton redirectUrl="/sign-in">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </Button>
+                </SignOutButton>
                 <ThemeToggle />
               </div>
             </div>

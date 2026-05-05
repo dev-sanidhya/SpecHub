@@ -9,6 +9,8 @@ function ThemedClerkProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
       appearance={{
         variables: {
           colorPrimary: "#6366f1",
