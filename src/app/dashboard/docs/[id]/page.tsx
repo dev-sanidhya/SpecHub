@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   ChevronLeft,
   Clock,
+  FileWarning,
   Eye,
   GitBranchPlus,
   GitPullRequest,
@@ -96,6 +97,8 @@ export default function DocPage() {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuggestForm, setShowSuggestForm] = useState(false);
+  const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [versions, setVersions] = useState<Version[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
   const [selectedVersionContent, setSelectedVersionContent] = useState<object | null>(null);
@@ -264,6 +267,26 @@ export default function DocPage() {
       setSubmitting(false);
     }
   }, [suggestTitle, suggestDesc, suggestContent, doc, docId]);
+
+  const handleDeleteDocument = useCallback(async () => {
+    if (!doc || deleteConfirmTitle.trim() !== doc.title) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/documents/${docId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete document");
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      setDeleting(false);
+    }
+  }, [deleteConfirmTitle, doc, docId, router]);
 
   const currentText = jsonToText(currentContent);
   const suggestText = jsonToText(suggestContent);
@@ -629,6 +652,50 @@ export default function DocPage() {
                 )}
               </div>
             </div>
+
+            {mode === "read" && doc && (
+              <div className="panel overflow-hidden rounded-[2rem]">
+                <div className="border-b border-border px-5 py-4">
+                  <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-red-500">
+                    <FileWarning className="h-3.5 w-3.5" />
+                    Danger zone
+                  </p>
+                </div>
+
+                <div className="space-y-4 p-5">
+                  <p className="text-sm leading-7 text-foreground-2">
+                    Only the document owner can remove this PRD. Deleting it will also remove its versions, suggestions, reviews,
+                    and comments.
+                  </p>
+
+                  <div className="rounded-[1.3rem] border border-red-500/20 bg-red-500/8 p-4">
+                    <p className="text-sm font-medium text-foreground">Delete document</p>
+                    <p className="mt-2 text-sm leading-7 text-foreground-2">
+                      Type <span className="font-semibold text-foreground">{doc.title}</span> to confirm permanent deletion.
+                    </p>
+                  </div>
+
+                  <Input
+                    type="text"
+                    placeholder="Type the document title to confirm"
+                    value={deleteConfirmTitle}
+                    onChange={(e) => setDeleteConfirmTitle(e.target.value)}
+                  />
+
+                  <Button
+                    variant="danger"
+                    size="md"
+                    className="w-full gap-2"
+                    onClick={handleDeleteDocument}
+                    loading={deleting}
+                    disabled={deleteConfirmTitle.trim() !== doc.title}
+                  >
+                    <FileWarning className="h-4 w-4" />
+                    Delete document
+                  </Button>
+                </div>
+              </div>
+            )}
           </aside>
         </section>
       )}

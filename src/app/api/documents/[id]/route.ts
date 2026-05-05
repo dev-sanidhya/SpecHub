@@ -1,11 +1,10 @@
 import { getAuthAndClient, ok, err } from "@/lib/api";
 
-// GET /api/documents/:id - fetch doc + current version content
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error, db } = await getAuthAndClient();
-  if (error) return error;
-
-  const { id } = await params;
+async function loadOwnedDocument(id: string) {
+  const { error, userId, db } = await getAuthAndClient();
+  if (error) {
+    return { response: error, doc: null, db: null };
+  }
 
   const { data: doc, error: docErr } = await db!
     .from("documents")
@@ -13,7 +12,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     .eq("id", id)
     .single();
 
-  if (docErr || !doc) return err(docErr?.message ?? "Not found", 404);
+  if (docErr || !doc) {
+    return { response: err(docErr?.message ?? "Not found", 404), doc: null, db: null };
+  }
+
+  if (doc.created_by !== userId) {
+    return { response: err("Forbidden", 403), doc: null, db: null };
+  }
+
+  return { response: null, doc, db: db!, userId };
+}
+
+// GET /api/documents/:id - fetch doc + current version content
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { response, doc, db } = await loadOwnedDocument(id);
+  if (response) return response;
 
   const docRow = doc as Record<string, unknown>;
 
@@ -34,10 +48,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 // PATCH /api/documents/:id - update title
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error, db } = await getAuthAndClient();
-  if (error) return error;
-
   const { id } = await params;
+  const { response, db } = await loadOwnedDocument(id);
+  if (response) return response;
+
   const body = await req.json();
   const { title } = body;
 
@@ -50,4 +64,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (dbErr) return err(dbErr.message, 500);
   return ok(data);
+}
+
+// DELETE /api/documents/:id - delete document and cascaded records
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { response, db } = await loadOwnedDocument(id);
+  if (response) return response;
+
+  const { error: dbErr } = await db!.from("documents").delete().eq("id", id);
+
+  if (dbErr) return err(dbErr.message, 500);
+  return ok({ success: true });
 }
