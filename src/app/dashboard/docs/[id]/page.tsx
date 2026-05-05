@@ -8,11 +8,11 @@ import {
   ChevronLeft,
   Clock,
   Eye,
+  GitBranchPlus,
   GitPullRequest,
   History,
   Loader2,
   PenLine,
-  Plus,
   Save,
   ShieldAlert,
   Sparkles,
@@ -63,18 +63,22 @@ interface Doc {
 
 const MODE_LABELS: Record<Mode, { title: string; description: string }> = {
   read: {
-    title: "Current document",
-    description: "Edit the canonical spec, save snapshots, and run contradiction checks as the source evolves.",
+    title: "Document",
+    description: "This is the source-of-truth spec. Edit it directly, then save a version snapshot when the state is worth preserving.",
   },
   suggest: {
     title: "Suggestion draft",
-    description: "Prepare a reviewable change instead of rewriting the source silently.",
+    description: "Prepare a reviewable change set against the current version instead of rewriting the source silently.",
   },
   history: {
     title: "Version history",
-    description: "Move through saved states and inspect what the product team believed at each step.",
+    description: "Inspect the timeline of saved states and compare what the document meant at each point.",
   },
 };
+
+function authorLabel(value: string) {
+  return `@${value.slice(0, 8)}`;
+}
 
 export default function DocPage() {
   const params = useParams();
@@ -123,9 +127,9 @@ export default function DocPage() {
         setDoc(docData);
         setTitle(docData.title ?? "Untitled");
         if (docData.currentVersion?.content) {
-          const c = docData.currentVersion.content as object;
-          setCurrentContent(c);
-          setSuggestContent(c);
+          const content = docData.currentVersion.content as object;
+          setCurrentContent(content);
+          setSuggestContent(content);
         }
         setVersions(versionsData);
         if (versionsData.length > 0) setSelectedVersion(versionsData[0]);
@@ -277,7 +281,7 @@ export default function DocPage() {
   if (isNew) {
     return (
       <div className="space-y-4 px-1 pb-1">
-        <section className="panel rounded-[2.3rem] p-5 lg:p-6">
+        <section className="panel rounded-[2.2rem] p-5 lg:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3">
               <Link href="/dashboard">
@@ -305,7 +309,7 @@ export default function DocPage() {
           </div>
         </section>
 
-        <div className="panel rounded-[2.3rem] p-2 lg:p-3">
+        <div className="panel rounded-[2.2rem] p-2 lg:p-3">
           <DocEditor content={null} editable onChange={setCurrentContent} placeholder="Start writing your PRD..." />
         </div>
       </div>
@@ -314,35 +318,35 @@ export default function DocPage() {
 
   return (
     <div className="space-y-4 px-1 pb-1">
-      <section className="panel rounded-[2.3rem] p-5 lg:p-6">
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex min-w-0 items-start gap-3">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="mt-1 gap-1.5">
-                  <ChevronLeft className="h-4 w-4" />
-                  Back
-                </Button>
-              </Link>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">{MODE_LABELS[mode].title}</p>
+      <section className="panel overflow-hidden rounded-[2.2rem]">
+        <div className="border-b border-border px-5 py-5 lg:px-6">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm" className="gap-1.5">
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                  </Button>
+                </Link>
+                <Badge variant="outline">spec</Badge>
+                <Badge variant="outline">v{doc?.current_version_number ?? 1}</Badge>
+                {openSuggestions > 0 && <Badge variant="warning">{openSuggestions} open suggestions</Badge>}
+              </div>
+
+              <div className="mt-4 min-w-0">
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   onBlur={handleTitleBlur}
-                  className="mt-2 w-full bg-transparent text-3xl font-semibold tracking-[-0.05em] text-foreground focus:outline-none"
+                  className="w-full bg-transparent text-3xl font-semibold tracking-[-0.05em] text-foreground focus:outline-none"
                 />
-                <p className="mt-2 max-w-3xl text-sm leading-7 text-foreground-2">{MODE_LABELS[mode].description}</p>
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-foreground-2">{MODE_LABELS[mode].description}</p>
               </div>
             </div>
 
-            <div className="flex flex-col items-stretch gap-3 lg:items-end">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">v{doc?.current_version_number ?? 1}</Badge>
-                <Badge variant="warning">{openSuggestions} open</Badge>
-              </div>
-
+            <div className="flex flex-col gap-3 xl:items-end">
               <div className="flex flex-wrap items-center gap-2">
                 {mode === "read" && (
                   <Button variant="secondary" size="md" onClick={handleSaveVersion} loading={saving} className="gap-2">
@@ -350,39 +354,67 @@ export default function DocPage() {
                     Save version
                   </Button>
                 )}
-                <div className="flex items-center rounded-full border border-border bg-surface-2/80 p-1">
-                  {(["read", "suggest", "history"] as Mode[]).map((item) => (
-                    <button
-                      key={item}
-                      onClick={() => setMode(item)}
-                      className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-colors ${
-                        mode === item ? "bg-surface text-foreground shadow-[0_12px_28px_-24px_var(--shadow-color)]" : "text-foreground-3 hover:text-foreground"
-                      }`}
-                    >
-                      {item === "read" && <Eye className="h-3.5 w-3.5" />}
-                      {item === "suggest" && <PenLine className="h-3.5 w-3.5" />}
-                      {item === "history" && <History className="h-3.5 w-3.5" />}
-                      {item}
-                    </button>
-                  ))}
-                </div>
+                {mode === "suggest" && !showSuggestForm && (
+                  <Button size="md" onClick={() => setShowSuggestForm(true)} className="gap-2">
+                    <GitBranchPlus className="h-4 w-4" />
+                    Open suggestion
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex items-center rounded-full border border-border bg-surface-2/80 p-1">
+                {(["read", "suggest", "history"] as Mode[]).map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setMode(item)}
+                    className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-colors ${
+                      mode === item ? "bg-surface text-foreground shadow-[0_12px_28px_-24px_var(--shadow-color)]" : "text-foreground-3 hover:text-foreground"
+                    }`}
+                  >
+                    {item === "read" && <Eye className="h-3.5 w-3.5" />}
+                    {item === "suggest" && <PenLine className="h-3.5 w-3.5" />}
+                    {item === "history" && <History className="h-3.5 w-3.5" />}
+                    {item}
+                  </button>
+                ))}
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="grid gap-px bg-border md:grid-cols-4">
+          <div className="bg-surface px-5 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Current version</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">v{doc?.current_version_number ?? 1}</p>
+          </div>
+          <div className="bg-surface px-5 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Open suggestions</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{openSuggestions}</p>
+          </div>
+          <div className="bg-surface px-5 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Saved versions</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{versions.length}</p>
+          </div>
+          <div className="bg-surface px-5 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Mode</p>
+            <p className="mt-2 text-lg font-semibold capitalize text-foreground">{MODE_LABELS[mode].title}</p>
           </div>
         </div>
       </section>
 
       {mode === "history" ? (
         <section className="grid gap-4 xl:grid-cols-[320px_1fr]">
-          <aside className="panel rounded-[2.1rem] p-4">
-            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Versions</p>
-            <div className="mt-4 space-y-2">
+          <aside className="panel overflow-hidden rounded-[2rem]">
+            <div className="border-b border-border px-5 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Version timeline</p>
+            </div>
+            <div className="space-y-2 p-4">
               {versions.length === 0 && <p className="px-2 text-xs text-foreground-3">No versions yet.</p>}
               {versions.map((version) => (
                 <button
                   key={version.id}
                   onClick={() => setSelectedVersion(version)}
-                  className={`w-full rounded-[1.5rem] border px-4 py-4 text-left transition-all ${
+                  className={`w-full rounded-[1.35rem] border px-4 py-4 text-left transition-all ${
                     selectedVersion?.id === version.id
                       ? "border-indigo-500/25 bg-indigo-500/10"
                       : "border-border bg-surface-2/60 hover:bg-surface-2"
@@ -396,6 +428,7 @@ export default function DocPage() {
                     <Clock className="h-3.5 w-3.5" />
                     {formatRelativeTime(version.created_at)}
                   </p>
+                  <p className="mt-2 text-xs text-foreground-3">Saved by {authorLabel(version.created_by)}</p>
                   {version.ai_summary && (
                     <p className="mt-3 flex items-start gap-2 text-xs leading-6 text-foreground-2">
                       <Sparkles className="mt-1 h-3.5 w-3.5 shrink-0 text-indigo-500" />
@@ -419,7 +452,7 @@ export default function DocPage() {
               </div>
             )}
 
-            <div className="panel rounded-[2.1rem] p-2 lg:p-3">
+            <div className="panel rounded-[2rem] p-2 lg:p-3">
               {selectedVersionContent ? (
                 <DocEditor content={selectedVersionContent} editable={false} />
               ) : (
@@ -431,36 +464,30 @@ export default function DocPage() {
           </div>
         </section>
       ) : (
-        <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-4">
             {mode === "suggest" && !showSuggestForm && (
-              <div className="panel-soft flex flex-col gap-4 rounded-[1.8rem] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Suggest mode</p>
-                  <p className="mt-1 text-sm leading-7 text-foreground-2">
-                    Your edits stay reviewable. When the draft is ready, open the submission panel and package the change as a suggestion.
-                  </p>
-                </div>
-                <Button size="md" onClick={() => setShowSuggestForm(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Review and submit
-                </Button>
+              <div className="panel-soft rounded-[1.8rem] px-5 py-4">
+                <p className="text-sm font-semibold text-foreground">Branch from the current source.</p>
+                <p className="mt-1 text-sm leading-7 text-foreground-2">
+                  Draft changes in isolation, review the diff, then publish them as a suggestion for discussion and merge.
+                </p>
               </div>
             )}
 
-            <div className="panel rounded-[2.1rem] p-2 lg:p-3">
+            <div className="panel rounded-[2rem] p-2 lg:p-3">
               {mode === "read" && <DocEditor content={currentContent} editable onChange={handleContentChange} />}
 
               {mode === "suggest" &&
                 (showSuggestForm ? (
                   <div className="space-y-4 p-3 lg:p-4">
                     <div className="px-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Preview changes</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Compare changes</p>
                       <p className="mt-2 text-sm leading-7 text-foreground-2">
-                        Compare the draft against the current source before publishing it to reviewers.
+                        This preview compares your draft against the current source version before it becomes a review item.
                       </p>
                     </div>
-                    <div className="panel-soft overflow-hidden rounded-[1.9rem]">
+                    <div className="panel-soft overflow-hidden rounded-[1.8rem]">
                       <DiffView oldText={currentText} newText={suggestText} />
                     </div>
                   </div>
@@ -472,37 +499,39 @@ export default function DocPage() {
 
           <aside className="space-y-4">
             {mode === "read" && (
-              <div className="panel rounded-[2rem] p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
-                    <ShieldAlert className="h-3.5 w-3.5" />
-                    AI checks
-                  </p>
-                  {checkingContradictions ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-foreground-3" />
-                  ) : contradictions.length === 0 ? (
-                    <Badge variant="success">Clean</Badge>
-                  ) : (
-                    <Badge variant="warning">{contradictions.length}</Badge>
-                  )}
+              <div className="panel overflow-hidden rounded-[2rem]">
+                <div className="border-b border-border px-5 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                      <ShieldAlert className="h-3.5 w-3.5" />
+                      Checks
+                    </p>
+                    {checkingContradictions ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-foreground-3" />
+                    ) : contradictions.length === 0 ? (
+                      <Badge variant="success">Passing</Badge>
+                    ) : (
+                      <Badge variant="warning">{contradictions.length}</Badge>
+                    )}
+                  </div>
                 </div>
 
-                <div className="mt-4 space-y-3">
+                <div className="space-y-3 p-5">
                   {contradictions.length > 0 ? (
                     contradictions.map((contradiction, index) => (
-                      <div key={index} className="rounded-[1.45rem] border border-amber-500/20 bg-amber-500/8 p-4">
+                      <div key={index} className="rounded-[1.35rem] border border-amber-500/20 bg-amber-500/8 p-4">
                         <p className="flex items-start gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
                           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                           {contradiction.issue}
                         </p>
                         <p className="mt-2 text-xs leading-6 text-foreground-2">
-                          “{contradiction.section1}” vs “{contradiction.section2}”
+                          &ldquo;{contradiction.section1}&rdquo; vs &ldquo;{contradiction.section2}&rdquo;
                         </p>
                       </div>
                     ))
                   ) : (
                     <p className="text-sm leading-7 text-foreground-2">
-                      Contradiction checks run automatically while the current version changes.
+                      Contradiction checks run automatically while the current document changes.
                     </p>
                   )}
                 </div>
@@ -510,9 +539,12 @@ export default function DocPage() {
             )}
 
             {mode === "suggest" && showSuggestForm && (
-              <div className="panel rounded-[2rem] p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Submit suggestion</p>
-                <div className="mt-4 space-y-4">
+              <div className="panel overflow-hidden rounded-[2rem]">
+                <div className="border-b border-border px-5 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Open suggestion</p>
+                </div>
+
+                <div className="space-y-4 p-5">
                   <Input
                     type="text"
                     placeholder="Suggestion title"
@@ -527,8 +559,8 @@ export default function DocPage() {
                     className="w-full resize-none rounded-[1.2rem] border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-[0_18px_36px_-28px_var(--shadow-color)] placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
                   />
 
-                  <div className="rounded-[1.4rem] border border-border bg-surface-2/70 p-4 text-sm leading-7 text-foreground-2">
-                    Reviewers will see the diff, your title, your rationale, and any discussion tied to this change.
+                  <div className="rounded-[1.3rem] border border-border bg-surface-2/70 p-4 text-sm leading-7 text-foreground-2">
+                    Reviewers will see the diff, rationale, and comment thread before the source document changes.
                   </div>
 
                   <div className="flex gap-2">
@@ -551,27 +583,39 @@ export default function DocPage() {
               </div>
             )}
 
-            <div className="panel rounded-[2rem] p-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
-                  <GitPullRequest className="h-3.5 w-3.5" />
-                  Suggestions
-                </p>
-                <Badge variant="warning">{openSuggestions} open</Badge>
+            <div className="panel overflow-hidden rounded-[2rem]">
+              <div className="border-b border-border px-5 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                    <GitPullRequest className="h-3.5 w-3.5" />
+                    Suggestions
+                  </p>
+                  <Badge variant="warning">{openSuggestions} open</Badge>
+                </div>
               </div>
 
-              <div className="mt-4 space-y-3">
+              <div className="divide-y divide-border">
                 {suggestions.length === 0 ? (
-                  <p className="text-sm leading-7 text-foreground-2">No suggestions yet. Use suggest mode to start the first review thread.</p>
+                  <div className="px-5 py-5 text-sm leading-7 text-foreground-2">
+                    No suggestions yet. Use suggest mode to start the first review thread.
+                  </div>
                 ) : (
                   suggestions.map((suggestion) => (
                     <Link
                       key={suggestion.id}
                       href={`/dashboard/docs/${docId}/suggestions/${suggestion.id}`}
-                      className="block rounded-[1.5rem] border border-border bg-surface-2/70 p-4 transition-all hover:-translate-y-0.5 hover:bg-surface-2"
+                      className="block px-5 py-4 transition-colors hover:bg-surface-2/45"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-sm font-semibold leading-6 text-foreground">{suggestion.title}</p>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">{suggestion.title}</p>
+                          {suggestion.description && (
+                            <p className="mt-1 line-clamp-2 text-sm leading-6 text-foreground-2">{suggestion.description}</p>
+                          )}
+                          <p className="mt-2 text-xs text-foreground-3">
+                            {authorLabel(suggestion.created_by)} opened {formatRelativeTime(suggestion.created_at)} · {suggestion.comments} comments
+                          </p>
+                        </div>
                         <Badge
                           variant={
                             suggestion.status === "open" ? "warning" : suggestion.status === "merged" ? "success" : "danger"
@@ -580,12 +624,6 @@ export default function DocPage() {
                           {suggestion.status}
                         </Badge>
                       </div>
-                      {suggestion.description && (
-                        <p className="mt-2 text-sm leading-6 text-foreground-2 line-clamp-2">{suggestion.description}</p>
-                      )}
-                      <p className="mt-3 text-xs text-foreground-3">
-                        {suggestion.created_by.slice(0, 8)} · {suggestion.comments} comments · {formatRelativeTime(suggestion.created_at)}
-                      </p>
                     </Link>
                   ))
                 )}

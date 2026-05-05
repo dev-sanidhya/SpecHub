@@ -47,6 +47,10 @@ interface Comment {
   created_at: string;
 }
 
+function authorLabel(value: string) {
+  return `@${value.slice(0, 8)}`;
+}
+
 export default function SuggestionPage() {
   const params = useParams();
   const docId = params.id as string;
@@ -169,146 +173,164 @@ export default function SuggestionPage() {
 
   return (
     <div className="space-y-4 px-1 pb-1">
-      <section className="panel rounded-[2.3rem] p-5 lg:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
-            <Link href={`/dashboard/docs/${docId}`}>
-              <Button variant="ghost" size="sm" className="mt-1 gap-1.5">
-                <ChevronLeft className="h-4 w-4" />
-                Back
-              </Button>
-            </Link>
+      <section className="panel overflow-hidden rounded-[2.2rem]">
+        <div className="border-b border-border px-5 py-5 lg:px-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Suggestion review</p>
-              <h1 className="mt-2 truncate text-3xl font-semibold tracking-[-0.05em] text-foreground">{suggestion.title}</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href={`/dashboard/docs/${docId}`}>
+                  <Button variant="ghost" size="sm" className="gap-1.5">
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                  </Button>
+                </Link>
+                <Badge variant={suggestion.status === "open" ? "warning" : suggestion.status === "merged" ? "success" : "danger"}>
+                  {suggestion.status}
+                </Badge>
+                {suggestion.baseVersion && <Badge variant="outline">base v{suggestion.baseVersion.version_number}</Badge>}
+              </div>
+
+              <h1 className="mt-4 truncate text-3xl font-semibold tracking-[-0.05em] text-foreground">{suggestion.title}</h1>
               {suggestion.description && <p className="mt-3 max-w-3xl text-sm leading-7 text-foreground-2">{suggestion.description}</p>}
               <p className="mt-3 text-xs text-foreground-3">
-                Proposed by {suggestion.created_by.slice(0, 12)} · {formatRelativeTime(suggestion.created_at)}
-                {suggestion.baseVersion && <> · base v{suggestion.baseVersion.version_number}</>}
+                {authorLabel(suggestion.created_by)} opened this suggestion {formatRelativeTime(suggestion.created_at)}
               </p>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Badge variant={suggestion.status === "open" ? "warning" : suggestion.status === "merged" ? "success" : "danger"}>
-              {suggestion.status}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              {isOpen ? (
+                <>
+                  {myReview?.decision !== "approved" && (
+                    <Button size="md" onClick={() => handleReview("approved")} loading={submittingReview} className="gap-2">
+                      <Check className="h-4 w-4" />
+                      Approve
+                    </Button>
+                  )}
+                  {approvalCount >= 1 && (
+                    <Button size="md" variant="secondary" onClick={handleMerge} loading={merging} className="gap-2">
+                      <GitMerge className="h-4 w-4" />
+                      Merge
+                    </Button>
+                  )}
+                  <Button size="md" variant="danger" onClick={handleReject} className="gap-2">
+                    <X className="h-4 w-4" />
+                    Reject
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-px bg-border md:grid-cols-4">
+          <div className="bg-surface px-5 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Reviews</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{reviews.length}</p>
+          </div>
+          <div className="bg-surface px-5 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Approvals</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{approvalCount}</p>
+          </div>
+          <div className="bg-surface px-5 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Comments</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{comments.length}</p>
+          </div>
+          <div className="bg-surface px-5 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Mergeability</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">
+              {isOpen ? (approvalCount >= 1 ? "Ready" : "Blocked") : suggestion.status}
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-4">
-          <div className="panel rounded-[2.1rem] p-5 lg:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Diff view</p>
-                <p className="mt-2 text-sm leading-7 text-foreground-2">
-                  Review the proposed content against the current base version before you approve, merge, or reject it.
-                </p>
-              </div>
-              <Badge variant="outline">Reviewable</Badge>
+          <div className="panel overflow-hidden rounded-[2rem]">
+            <div className="border-b border-border px-5 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Files changed</p>
             </div>
-
-            <div className="mt-5 panel-soft overflow-hidden rounded-[1.9rem]">
+            <div className="panel-soft overflow-hidden rounded-none">
               <DiffView oldText={oldText} newText={newText} />
             </div>
           </div>
 
-          <div className="panel rounded-[2.1rem] p-5 lg:p-6">
-            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
-              <MessageSquare className="h-3.5 w-3.5" />
-              Discussion
-            </p>
+          <div className="panel overflow-hidden rounded-[2rem]">
+            <div className="border-b border-border px-5 py-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Conversation
+              </p>
+            </div>
 
-            <div className="mt-5 space-y-4">
+            <div className="space-y-4 p-5">
               {comments.length === 0 ? (
                 <p className="text-sm leading-7 text-foreground-2">No comments yet. Start the discussion around this change.</p>
               ) : (
                 comments.map((item) => (
-                  <div key={item.id} className="flex gap-3 rounded-[1.6rem] border border-border bg-surface-2/65 p-4">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-500/15 text-xs font-semibold text-indigo-500">
-                      {item.author_id.slice(0, 2).toUpperCase()}
+                  <div key={item.id} className="rounded-[1.4rem] border border-border bg-surface-2/65 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">
+                        {item.author_id === user?.id ? "You" : authorLabel(item.author_id)}
+                      </span>
+                      <span className="text-xs text-foreground-3">{formatRelativeTime(item.created_at)}</span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-foreground">
-                          {item.author_id === user?.id ? "You" : item.author_id.slice(0, 8)}
-                        </span>
-                        <span className="text-xs text-foreground-3">{formatRelativeTime(item.created_at)}</span>
-                      </div>
-                      <p className="mt-2 text-sm leading-7 text-foreground-2">{item.body}</p>
-                    </div>
+                    <p className="mt-2 text-sm leading-7 text-foreground-2">{item.body}</p>
                   </div>
                 ))
               )}
-            </div>
 
-            <div className="mt-5 flex flex-col gap-3">
-              <textarea
-                placeholder="Add a comment..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={4}
-                className="w-full resize-none rounded-[1.25rem] border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-[0_18px_36px_-28px_var(--shadow-color)] placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
-              />
-              <div className="flex justify-end">
-                <Button size="md" variant="secondary" onClick={handleComment} loading={submittingComment} disabled={!comment.trim()}>
-                  Post comment
-                </Button>
+              <div className="flex flex-col gap-3 border-t border-border pt-4">
+                <textarea
+                  placeholder="Add a comment..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={4}
+                  className="w-full resize-none rounded-[1.25rem] border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-[0_18px_36px_-28px_var(--shadow-color)] placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
+                />
+                <div className="flex justify-end">
+                  <Button size="md" variant="secondary" onClick={handleComment} loading={submittingComment} disabled={!comment.trim()}>
+                    Post comment
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <aside className="space-y-4">
-          <div className="panel rounded-[2rem] p-5">
-            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
-              <GitPullRequest className="h-3.5 w-3.5" />
-              Decision
-            </p>
+          <div className="panel overflow-hidden rounded-[2rem]">
+            <div className="border-b border-border px-5 py-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                <GitPullRequest className="h-3.5 w-3.5" />
+                Review state
+              </p>
+            </div>
 
-            <div className="mt-4">
+            <div className="space-y-4 p-5">
               {isOpen ? (
                 <>
                   {approvalCount >= 1 ? (
-                    <div className="rounded-[1.4rem] border border-green-500/20 bg-green-500/10 p-4 text-sm leading-7 text-green-600 dark:text-green-400">
-                      {approvalCount} approval{approvalCount > 1 ? "s" : ""}. This change is ready to merge.
+                    <div className="rounded-[1.3rem] border border-green-500/20 bg-green-500/10 p-4 text-sm leading-7 text-green-600 dark:text-green-400">
+                      This suggestion has enough approval to merge.
                     </div>
                   ) : (
-                    <div className="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/10 p-4 text-sm leading-7 text-amber-600 dark:text-amber-400">
-                      Needs at least 1 approval before merge.
+                    <div className="rounded-[1.3rem] border border-amber-500/20 bg-amber-500/10 p-4 text-sm leading-7 text-amber-600 dark:text-amber-400">
+                      Merge is blocked until the suggestion has at least one approval.
                     </div>
                   )}
 
-                  <div className="mt-4 space-y-2">
-                    {myReview?.decision !== "approved" ? (
-                      <Button className="w-full gap-2" size="md" onClick={() => handleReview("approved")} loading={submittingReview}>
-                        <Check className="h-4 w-4" />
-                        Approve
-                      </Button>
-                    ) : (
-                      <div className="rounded-[1.3rem] border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
-                        You approved this suggestion.
-                      </div>
-                    )}
-
-                    {approvalCount >= 1 && (
-                      <Button className="w-full gap-2" size="md" variant="secondary" onClick={handleMerge} loading={merging}>
-                        <GitMerge className="h-4 w-4" />
-                        Merge into document
-                      </Button>
-                    )}
-
-                    <Button className="w-full gap-2" size="md" variant="danger" onClick={handleReject}>
-                      <X className="h-4 w-4" />
-                      Reject
-                    </Button>
-                  </div>
+                  {myReview?.decision === "approved" ? (
+                    <div className="rounded-[1.3rem] border border-green-500/20 bg-green-500/10 p-4 text-sm leading-7 text-green-600 dark:text-green-400">
+                      You approved this suggestion.
+                    </div>
+                  ) : (
+                    <p className="text-sm leading-7 text-foreground-2">Approve this change once the diff and rationale look correct.</p>
+                  )}
                 </>
               ) : (
                 <div
-                  className={`rounded-[1.4rem] border p-4 text-sm leading-7 ${
+                  className={`rounded-[1.3rem] border p-4 text-sm leading-7 ${
                     suggestion.status === "merged"
                       ? "border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400"
                       : "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
@@ -320,13 +342,15 @@ export default function SuggestionPage() {
             </div>
           </div>
 
-          <div className="panel rounded-[2rem] p-5">
-            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
-              <Sparkles className="h-3.5 w-3.5" />
-              AI summary
-            </p>
+          <div className="panel overflow-hidden rounded-[2rem]">
+            <div className="border-b border-border px-5 py-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                <Sparkles className="h-3.5 w-3.5" />
+                AI summary
+              </p>
+            </div>
 
-            <div className="mt-4">
+            <div className="p-5">
               {loadingSummary ? (
                 <div className="flex items-center gap-2 text-sm text-foreground-3">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -340,18 +364,20 @@ export default function SuggestionPage() {
             </div>
           </div>
 
-          <div className="panel rounded-[2rem] p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Reviews</p>
+          <div className="panel overflow-hidden rounded-[2rem]">
+            <div className="border-b border-border px-5 py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Reviews</p>
+            </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="divide-y divide-border">
               {reviews.length === 0 ? (
-                <p className="text-sm leading-7 text-foreground-2">No reviews yet.</p>
+                <div className="px-5 py-5 text-sm leading-7 text-foreground-2">No reviews yet.</div>
               ) : (
                 reviews.map((review) => (
-                  <div key={review.id} className="rounded-[1.45rem] border border-border bg-surface-2/65 p-4">
+                  <div key={review.id} className="px-5 py-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-semibold text-foreground">
-                        {review.reviewer_id === user?.id ? "You" : review.reviewer_id.slice(0, 8)}
+                        {review.reviewer_id === user?.id ? "You" : authorLabel(review.reviewer_id)}
                       </span>
                       <Badge variant={review.decision === "approved" ? "success" : "danger"}>{review.decision}</Badge>
                     </div>
