@@ -46,21 +46,21 @@ export function DiffView({ oldText, newText }: DiffViewProps) {
   );
 
   return (
-    <div className="overflow-auto bg-surface">
+    <div className="overflow-auto bg-transparent">
       <div className="min-w-full divide-y divide-border/60 font-mono text-sm">
         {segments.map((segment, index) => {
           const marker = segment.op === 1 ? "+" : segment.op === -1 ? "-" : " ";
           const tone =
             segment.op === 1
-              ? "bg-green-500/10 text-green-600 dark:text-green-400"
+              ? "bg-green-500/8 text-green-600 dark:text-green-400"
               : segment.op === -1
-                ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                ? "bg-red-500/8 text-red-600 dark:text-red-400"
                 : "text-foreground-2";
 
           return (
-            <div key={`${index}-${segment.text}`} className={cn("grid grid-cols-[40px_1fr] gap-0", tone)}>
-              <div className="border-r border-border/60 px-3 py-2 text-center opacity-60">{marker}</div>
-              <div className={cn("px-4 py-2 whitespace-pre-wrap break-words", segment.op === -1 && "line-through")}>
+            <div key={`${index}-${segment.text}`} className={cn("grid grid-cols-[52px_1fr] gap-0", tone)}>
+              <div className="border-r border-border/60 px-3 py-3 text-center text-xs opacity-60">{marker}</div>
+              <div className={cn("px-5 py-3 whitespace-pre-wrap break-words leading-7", segment.op === -1 && "line-through")}>
                 {segment.text || " "}
                 {segment.endsWithBreak ? "\n" : ""}
               </div>

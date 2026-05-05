@@ -19,7 +19,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       type="button"
       onClick={toggle}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/90 text-foreground-2 shadow-[0_10px_30px_-18px_var(--shadow-color)] backdrop-blur transition-all hover:-translate-y-0.5 hover:border-border-2 hover:bg-surface-2 hover:text-foreground ${className}`}
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface/90 text-foreground-2 shadow-[0_18px_36px_-24px_var(--shadow-color)] backdrop-blur transition-all hover:-translate-y-0.5 hover:border-border-2 hover:bg-surface-2 hover:text-foreground ${className}`}
       title={dark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

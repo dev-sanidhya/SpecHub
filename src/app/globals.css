@@ -2,58 +2,62 @@
 
 :root {
   color-scheme: light;
-  --background: #f7f5ff;
-  --surface: #ffffff;
-  --surface-2: #f2efff;
-  --surface-3: #e7e2fb;
-  --surface-4: #ddd7f7;
-  --border: #ddd7f3;
-  --border-2: #ccc4eb;
-  --border-3: #a99ecf;
-  --foreground: #17132b;
-  --foreground-2: #575072;
-  --foreground-3: #857da5;
-  --accent: #6366f1;
-  --accent-hover: #4f52e0;
-  --accent-subtle: rgba(99, 102, 241, 0.12);
-  --accent-strong: rgba(99, 102, 241, 0.22);
-  --success: #16a34a;
-  --danger: #dc2626;
-  --warning: #d97706;
-  --shadow-color: rgba(68, 43, 135, 0.14);
-  --hero-glow: rgba(99, 102, 241, 0.18);
-  --add: rgba(34, 197, 94, 0.12);
-  --add-text: #16a34a;
-  --remove: rgba(239, 68, 68, 0.12);
-  --remove-text: #dc2626;
+  --background: #f3f0ff;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-2: rgba(246, 243, 255, 0.92);
+  --surface-3: #ebe6ff;
+  --surface-4: #ddd4ff;
+  --surface-5: rgba(255, 255, 255, 0.62);
+  --border: rgba(125, 103, 198, 0.14);
+  --border-2: rgba(111, 92, 181, 0.24);
+  --border-3: rgba(95, 76, 164, 0.4);
+  --foreground: #161225;
+  --foreground-2: #5d5576;
+  --foreground-3: #8a80a8;
+  --accent: #5b63ff;
+  --accent-hover: #4951ec;
+  --accent-subtle: rgba(91, 99, 255, 0.12);
+  --accent-strong: rgba(91, 99, 255, 0.22);
+  --success: #17924c;
+  --danger: #d33b4d;
+  --warning: #c98512;
+  --shadow-color: rgba(44, 28, 104, 0.14);
+  --hero-glow: rgba(91, 99, 255, 0.22);
+  --hero-secondary: rgba(11, 181, 255, 0.14);
+  --add: rgba(23, 146, 76, 0.12);
+  --add-text: #17924c;
+  --remove: rgba(211, 59, 77, 0.12);
+  --remove-text: #c13141;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #09090d;
-  --surface: #101018;
-  --surface-2: #141421;
-  --surface-3: #1b1b2a;
-  --surface-4: #24243a;
-  --border: #232337;
-  --border-2: #31314a;
-  --border-3: #4a4a67;
-  --foreground: #f2f2f5;
-  --foreground-2: #afaec7;
-  --foreground-3: #737393;
-  --accent: #6366f1;
-  --accent-hover: #4f52e0;
-  --accent-subtle: rgba(99, 102, 241, 0.12);
-  --accent-strong: rgba(99, 102, 241, 0.24);
-  --success: #22c55e;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --shadow-color: rgba(0, 0, 0, 0.45);
-  --hero-glow: rgba(99, 102, 241, 0.24);
-  --add: rgba(34, 197, 94, 0.12);
-  --add-text: #4ade80;
-  --remove: rgba(239, 68, 68, 0.12);
-  --remove-text: #f87171;
+  --background: #080914;
+  --surface: rgba(18, 20, 34, 0.76);
+  --surface-2: rgba(21, 23, 40, 0.9);
+  --surface-3: #1b1e35;
+  --surface-4: #262b46;
+  --surface-5: rgba(20, 22, 38, 0.58);
+  --border: rgba(132, 141, 201, 0.14);
+  --border-2: rgba(132, 141, 201, 0.22);
+  --border-3: rgba(149, 159, 228, 0.38);
+  --foreground: #f4f5fb;
+  --foreground-2: #b0b6d4;
+  --foreground-3: #7d84a8;
+  --accent: #7a7dff;
+  --accent-hover: #696dff;
+  --accent-subtle: rgba(122, 125, 255, 0.14);
+  --accent-strong: rgba(122, 125, 255, 0.24);
+  --success: #3dd68c;
+  --danger: #ff667a;
+  --warning: #f4b443;
+  --shadow-color: rgba(0, 0, 0, 0.48);
+  --hero-glow: rgba(122, 125, 255, 0.26);
+  --hero-secondary: rgba(48, 211, 255, 0.16);
+  --add: rgba(61, 214, 140, 0.12);
+  --add-text: #57e89e;
+  --remove: rgba(255, 102, 122, 0.14);
+  --remove-text: #ff8e9d;
 }
 
 @theme inline {
@@ -62,6 +66,7 @@
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
   --color-surface-4: var(--surface-4);
+  --color-surface-5: var(--surface-5);
   --color-border: var(--border);
   --color-border-2: var(--border-2);
   --color-border-3: var(--border-3);
@@ -69,8 +74,8 @@
   --color-foreground-2: var(--foreground-2);
   --color-foreground-3: var(--foreground-3);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
 }
 
 *,
@@ -87,10 +92,11 @@ html {
 
 body {
   min-height: 100%;
-  background: var(--background);
-  background-image:
-    radial-gradient(circle at top, var(--hero-glow), transparent 28%),
-    radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.08), transparent 22%);
+  background:
+    radial-gradient(circle at 18% 16%, var(--hero-glow), transparent 24%),
+    radial-gradient(circle at 84% 12%, var(--hero-secondary), transparent 20%),
+    radial-gradient(circle at 20% 88%, rgba(124, 92, 255, 0.08), transparent 22%),
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 90%, white 10%), var(--background));
   color: var(--foreground);
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -113,7 +119,7 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid rgba(99, 102, 241, 0.75);
+  outline: 2px solid color-mix(in srgb, var(--accent) 75%, white 25%);
   outline-offset: 2px;
 }
 
@@ -140,23 +146,49 @@ textarea {
 }
 
 .panel {
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-  border: 1px solid var(--border);
-  box-shadow: 0 24px 60px -28px var(--shadow-color);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  box-shadow:
+    0 28px 80px -36px var(--shadow-color),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px);
+}
+
+.panel-soft {
+  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
+  box-shadow: 0 22px 48px -34px var(--shadow-color);
   backdrop-filter: blur(18px);
 }
 
 .grid-overlay {
   background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--border) 35%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--border) 35%, transparent) 1px, transparent 1px);
-  background-size: 28px 28px;
+    linear-gradient(to right, color-mix(in srgb, var(--border) 42%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border) 42%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.ambient-ring {
+  position: relative;
+  overflow: hidden;
+}
+
+.ambient-ring::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 34%),
+    conic-gradient(from 180deg at 50% 50%, transparent, color-mix(in srgb, var(--accent) 18%, transparent), transparent 60%);
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .tiptap {
-  min-height: 400px;
+  min-height: 520px;
   color: var(--foreground);
-  line-height: 1.7;
+  font-size: 1.045rem;
+  line-height: 1.9;
   outline: none;
 }
 
@@ -169,67 +201,78 @@ textarea {
 }
 
 .tiptap h1 {
-  margin: 1.5rem 0 0.75rem;
-  font-size: 2rem;
-  font-weight: 700;
+  margin: 0 0 1.2rem;
+  font-size: clamp(2.5rem, 4vw, 3.6rem);
+  font-weight: 650;
+  letter-spacing: -0.06em;
+  line-height: 1.04;
 }
 
 .tiptap h2 {
-  margin: 1.25rem 0 0.6rem;
-  font-size: 1.5rem;
-  font-weight: 600;
+  margin: 2.5rem 0 0.95rem;
+  font-size: clamp(1.65rem, 2vw, 2.15rem);
+  font-weight: 620;
+  letter-spacing: -0.04em;
+  line-height: 1.18;
 }
 
 .tiptap h3 {
-  margin: 1rem 0 0.5rem;
+  margin: 2rem 0 0.8rem;
   font-size: 1.25rem;
   font-weight: 600;
+  letter-spacing: -0.03em;
 }
 
 .tiptap p {
-  margin: 0.5rem 0;
+  margin: 0.9rem 0;
+  max-width: 74ch;
 }
 
 .tiptap ul,
 .tiptap ol {
-  margin: 0.5rem 0;
+  margin: 1rem 0;
+  max-width: 72ch;
   padding-left: 1.5rem;
 }
 
 .tiptap li {
-  margin: 0.25rem 0;
+  margin: 0.45rem 0;
 }
 
 .tiptap blockquote {
-  margin: 1rem 0;
-  border-left: 3px solid var(--accent);
-  padding-left: 1rem;
+  margin: 1.75rem 0;
+  max-width: 72ch;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  padding: 0.2rem 0 0.2rem 1.25rem;
   color: var(--foreground-2);
 }
 
 .tiptap code {
-  border-radius: 6px;
-  background: var(--surface-3);
-  padding: 0.15em 0.4em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-3) 88%, transparent);
+  padding: 0.2em 0.55em;
   font-family: var(--font-geist-mono);
-  font-size: 0.875em;
+  font-size: 0.9em;
 }
 
 .tiptap pre {
-  margin: 1rem 0;
+  margin: 1.8rem 0;
   overflow-x: auto;
-  border-radius: 8px;
-  background: var(--surface-3);
-  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  padding: 1.15rem 1.2rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .tiptap pre code {
   background: none;
   padding: 0;
+  border-radius: 0;
 }
 
 .tiptap hr {
-  margin: 1.5rem 0;
+  margin: 2.4rem 0;
   border: none;
   border-top: 1px solid var(--border);
 }
@@ -237,10 +280,12 @@ textarea {
 .tiptap a {
   color: var(--accent);
   text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  text-underline-offset: 0.18em;
 }
 
 .tiptap strong {
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .tiptap em {
@@ -252,20 +297,20 @@ textarea {
 }
 
 .tiptap mark {
-  border-radius: 2px;
-  background: rgba(245, 158, 11, 0.2);
-  padding: 0.1em 0.2em;
+  border-radius: 0.35rem;
+  background: rgba(245, 158, 11, 0.18);
+  padding: 0.08em 0.22em;
   color: var(--foreground);
 }
 
 .diff-add {
-  border-radius: 2px;
+  border-radius: 0.35rem;
   background: var(--add);
   color: var(--add-text);
 }
 
 .diff-remove {
-  border-radius: 2px;
+  border-radius: 0.35rem;
   background: var(--remove);
   color: var(--remove-text);
   text-decoration: line-through;
