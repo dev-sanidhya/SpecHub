@@ -110,25 +110,31 @@ Right sidebar shows open/merged suggestions for that doc.
 - **Contradiction detection** - on every document edit (3s debounce), surfaces conflicting statements in sidebar
 - **Diff summary** - on suggestion detail page load, bullet-point summary of what changed
 
+## Phase 4 - UI Polish + Settings (COMPLETE)
+
+- Spacing overhaul across all functional pages (dashboard, doc editor, suggestion review):
+  - `space-y-4` upgraded to `space-y-6` on all main content areas
+  - Panel headers and stats cells now use `px-7 py-6` / `px-7 py-8` for breathing room
+  - Sidebar panel interiors: `p-5` upgraded to `p-6` throughout
+  - Document list rows: taller, wider icon, more comfortable row padding
+  - Empty states: larger icons, more vertical padding
+- Settings page added at `/dashboard/settings`:
+  - Workspace rename (live PATCH to `/api/workspace`, Enter to save)
+  - Appearance (theme toggle in context)
+  - AI features overview (contradiction detection, changelog, diff summary)
+  - Account details (read-only Clerk data)
+- Sidebar: Settings nav item added, nav `exact` matching prevents false active states
+- Header: now context-aware - shows the current section label and a relevant subtitle per route
+- Workspace API: `PATCH /api/workspace` added for name updates
+
 ## Next Steps
 
-### Phase 4 - Integrations
+### Phase 5 - Integrations
 - Slack webhook on suggestion opened/merged
 - Notion import (paste Notion URL, fetch content)
 - Shareable public diff links (no auth required)
 
-### Phase 5 - Polish + Deploy
-- Real-time updates (Supabase realtime subscriptions)
-- Keyboard shortcuts
-- Mobile responsive tweaks
-- Deploy to Vercel
-
-### Phase 4 - Integrations
-- Slack webhook on suggestion opened/merged
-- Notion import (paste Notion URL, fetch content)
-- Shareable public diff links (no auth required)
-
-### Phase 5 - Polish + Deploy
+### Phase 6 - Production
 - Real-time updates (Supabase realtime subscriptions)
 - Keyboard shortcuts
 - Mobile responsive tweaks
