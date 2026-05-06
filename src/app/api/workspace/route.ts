@@ -1,5 +1,25 @@
 import { getAuthAndClient, ok, err } from "@/lib/api";
 
+// PATCH /api/workspace - rename the user's workspace
+export async function PATCH(request: Request) {
+  const { error, userId, db } = await getAuthAndClient();
+  if (error) return error;
+
+  const body = await request.json() as { name?: unknown };
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  if (!name) return err("Name is required", 400);
+
+  const { data, error: updateErr } = await db!
+    .from("workspaces")
+    .update({ name })
+    .eq("owner_id", userId!)
+    .select()
+    .single();
+
+  if (updateErr) return err(updateErr.message, 500);
+  return ok(data);
+}
+
 // GET /api/workspace - fetch or create the user's personal workspace
 export async function GET() {
   const { error, userId, db } = await getAuthAndClient();
