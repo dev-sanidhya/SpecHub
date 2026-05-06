@@ -172,10 +172,10 @@ export default function SuggestionPage() {
   const isOpen = suggestion.status === "open";
 
   return (
-    <div className="space-y-4 px-1 pb-1">
+    <div className="space-y-6 px-1 pb-6">
       <section className="panel overflow-hidden rounded-[2.2rem]">
-        <div className="border-b border-border px-5 py-5 lg:px-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="border-b border-border px-6 py-7 lg:px-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <Link href={`/dashboard/docs/${docId}`}>
@@ -190,14 +190,14 @@ export default function SuggestionPage() {
                 {suggestion.baseVersion && <Badge variant="outline">base v{suggestion.baseVersion.version_number}</Badge>}
               </div>
 
-              <h1 className="mt-4 truncate text-3xl font-semibold tracking-[-0.05em] text-foreground">{suggestion.title}</h1>
+              <h1 className="mt-5 truncate text-3xl font-semibold tracking-[-0.05em] text-foreground">{suggestion.title}</h1>
               {suggestion.description && <p className="mt-3 max-w-3xl text-sm leading-7 text-foreground-2">{suggestion.description}</p>}
               <p className="mt-3 text-xs text-foreground-3">
                 {authorLabel(suggestion.created_by)} opened this suggestion {formatRelativeTime(suggestion.created_at)}
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
               {isOpen ? (
                 <>
                   {myReview?.decision !== "approved" && (
@@ -223,31 +223,31 @@ export default function SuggestionPage() {
         </div>
 
         <div className="grid gap-px bg-border md:grid-cols-4">
-          <div className="bg-surface px-5 py-4">
+          <div className="bg-surface px-6 py-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Reviews</p>
-            <p className="mt-2 text-lg font-semibold text-foreground">{reviews.length}</p>
+            <p className="mt-2.5 text-lg font-semibold text-foreground">{reviews.length}</p>
           </div>
-          <div className="bg-surface px-5 py-4">
+          <div className="bg-surface px-6 py-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Approvals</p>
-            <p className="mt-2 text-lg font-semibold text-foreground">{approvalCount}</p>
+            <p className="mt-2.5 text-lg font-semibold text-foreground">{approvalCount}</p>
           </div>
-          <div className="bg-surface px-5 py-4">
+          <div className="bg-surface px-6 py-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Comments</p>
-            <p className="mt-2 text-lg font-semibold text-foreground">{comments.length}</p>
+            <p className="mt-2.5 text-lg font-semibold text-foreground">{comments.length}</p>
           </div>
-          <div className="bg-surface px-5 py-4">
+          <div className="bg-surface px-6 py-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Mergeability</p>
-            <p className="mt-2 text-lg font-semibold text-foreground">
+            <p className="mt-2.5 text-lg font-semibold text-foreground">
               {isOpen ? (approvalCount >= 1 ? "Ready" : "Blocked") : suggestion.status}
             </p>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-4">
+      <section className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="space-y-6">
           <div className="panel overflow-hidden rounded-[2rem]">
-            <div className="border-b border-border px-5 py-4">
+            <div className="border-b border-border px-6 py-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Files changed</p>
             </div>
             <div className="panel-soft overflow-hidden rounded-none">
@@ -256,37 +256,37 @@ export default function SuggestionPage() {
           </div>
 
           <div className="panel overflow-hidden rounded-[2rem]">
-            <div className="border-b border-border px-5 py-4">
+            <div className="border-b border-border px-6 py-5">
               <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Conversation
               </p>
             </div>
 
-            <div className="space-y-4 p-5">
+            <div className="space-y-4 p-6">
               {comments.length === 0 ? (
-                <p className="text-sm leading-7 text-foreground-2">No comments yet. Start the discussion around this change.</p>
+                <p className="py-2 text-sm leading-7 text-foreground-2">No comments yet. Start the discussion around this change.</p>
               ) : (
                 comments.map((item) => (
-                  <div key={item.id} className="rounded-[1.4rem] border border-border bg-surface-2/65 p-4">
+                  <div key={item.id} className="rounded-[1.4rem] border border-border bg-surface-2/65 p-5">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-semibold text-foreground">
                         {item.author_id === user?.id ? "You" : authorLabel(item.author_id)}
                       </span>
                       <span className="text-xs text-foreground-3">{formatRelativeTime(item.created_at)}</span>
                     </div>
-                    <p className="mt-2 text-sm leading-7 text-foreground-2">{item.body}</p>
+                    <p className="mt-2.5 text-sm leading-7 text-foreground-2">{item.body}</p>
                   </div>
                 ))
               )}
 
-              <div className="flex flex-col gap-3 border-t border-border pt-4">
+              <div className="flex flex-col gap-3 border-t border-border pt-5">
                 <textarea
                   placeholder="Add a comment..."
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   rows={4}
-                  className="w-full resize-none rounded-[1.25rem] border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-[0_18px_36px_-28px_var(--shadow-color)] placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
+                  className="w-full resize-none rounded-[1.25rem] border border-border bg-surface px-4 py-3.5 text-sm text-foreground shadow-[0_18px_36px_-28px_var(--shadow-color)] placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
                 />
                 <div className="flex justify-end">
                   <Button size="md" variant="secondary" onClick={handleComment} loading={submittingComment} disabled={!comment.trim()}>
@@ -298,30 +298,30 @@ export default function SuggestionPage() {
           </div>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-6">
           <div className="panel overflow-hidden rounded-[2rem]">
-            <div className="border-b border-border px-5 py-4">
+            <div className="border-b border-border px-6 py-5">
               <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
                 <GitPullRequest className="h-3.5 w-3.5" />
                 Review state
               </p>
             </div>
 
-            <div className="space-y-4 p-5">
+            <div className="space-y-4 p-6">
               {isOpen ? (
                 <>
                   {approvalCount >= 1 ? (
-                    <div className="rounded-[1.3rem] border border-green-500/20 bg-green-500/10 p-4 text-sm leading-7 text-green-600 dark:text-green-400">
+                    <div className="rounded-[1.3rem] border border-green-500/20 bg-green-500/10 px-5 py-4 text-sm leading-7 text-green-600 dark:text-green-400">
                       This suggestion has enough approval to merge.
                     </div>
                   ) : (
-                    <div className="rounded-[1.3rem] border border-amber-500/20 bg-amber-500/10 p-4 text-sm leading-7 text-amber-600 dark:text-amber-400">
+                    <div className="rounded-[1.3rem] border border-amber-500/20 bg-amber-500/10 px-5 py-4 text-sm leading-7 text-amber-600 dark:text-amber-400">
                       Merge is blocked until the suggestion has at least one approval.
                     </div>
                   )}
 
                   {myReview?.decision === "approved" ? (
-                    <div className="rounded-[1.3rem] border border-green-500/20 bg-green-500/10 p-4 text-sm leading-7 text-green-600 dark:text-green-400">
+                    <div className="rounded-[1.3rem] border border-green-500/20 bg-green-500/10 px-5 py-4 text-sm leading-7 text-green-600 dark:text-green-400">
                       You approved this suggestion.
                     </div>
                   ) : (
@@ -330,7 +330,7 @@ export default function SuggestionPage() {
                 </>
               ) : (
                 <div
-                  className={`rounded-[1.3rem] border p-4 text-sm leading-7 ${
+                  className={`rounded-[1.3rem] border px-5 py-4 text-sm leading-7 ${
                     suggestion.status === "merged"
                       ? "border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400"
                       : "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
@@ -343,16 +343,16 @@ export default function SuggestionPage() {
           </div>
 
           <div className="panel overflow-hidden rounded-[2rem]">
-            <div className="border-b border-border px-5 py-4">
+            <div className="border-b border-border px-6 py-5">
               <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
                 <Sparkles className="h-3.5 w-3.5" />
                 AI summary
               </p>
             </div>
 
-            <div className="p-5">
+            <div className="p-6">
               {loadingSummary ? (
-                <div className="flex items-center gap-2 text-sm text-foreground-3">
+                <div className="flex items-center gap-2.5 text-sm text-foreground-3">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Analyzing change...
                 </div>
@@ -365,16 +365,16 @@ export default function SuggestionPage() {
           </div>
 
           <div className="panel overflow-hidden rounded-[2rem]">
-            <div className="border-b border-border px-5 py-4">
+            <div className="border-b border-border px-6 py-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Reviews</p>
             </div>
 
             <div className="divide-y divide-border">
               {reviews.length === 0 ? (
-                <div className="px-5 py-5 text-sm leading-7 text-foreground-2">No reviews yet.</div>
+                <div className="px-6 py-6 text-sm leading-7 text-foreground-2">No reviews yet.</div>
               ) : (
                 reviews.map((review) => (
-                  <div key={review.id} className="px-5 py-4">
+                  <div key={review.id} className="px-6 py-5">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-semibold text-foreground">
                         {review.reviewer_id === user?.id ? "You" : authorLabel(review.reviewer_id)}
@@ -389,9 +389,9 @@ export default function SuggestionPage() {
           </div>
 
           {isOpen && approvalCount < 1 && (
-            <div className="panel-soft rounded-[1.8rem] p-4">
-              <p className="flex items-start gap-2 text-sm leading-7 text-foreground-2">
-                <AlertCircle className="mt-1 h-4 w-4 shrink-0 text-amber-500" />
+            <div className="panel-soft rounded-[1.8rem] px-5 py-5">
+              <p className="flex items-start gap-3 text-sm leading-7 text-foreground-2">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                 Merge is intentionally blocked until the suggestion has at least one approval.
               </p>
             </div>

@@ -98,15 +98,15 @@ export default function DashboardPage() {
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
 
   return (
-    <div className="space-y-4 px-1 pb-1">
-      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+    <div className="space-y-6 px-1 pb-6">
+      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="panel overflow-hidden rounded-[2.2rem]">
-          <div className="border-b border-border px-6 py-5 lg:px-7">
+          <div className="border-b border-border px-7 py-8 lg:px-8">
             <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
               <Orbit className="h-3.5 w-3.5" />
               Repository view
             </p>
-            <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-2xl">
                 <h2 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">
                   {workspace?.name ?? "Workspace"} keeps specs reviewable.
@@ -116,7 +116,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <Button size="lg" className="gap-2" onClick={createDoc} loading={creating}>
+              <Button size="lg" className="gap-2 shrink-0" onClick={createDoc} loading={creating}>
                 <Plus className="h-4 w-4" />
                 New spec
               </Button>
@@ -124,17 +124,17 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-px bg-border md:grid-cols-3">
-            <div className="bg-surface px-6 py-5">
+            <div className="bg-surface px-7 py-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Documents</p>
               <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-foreground">{docs.length}</p>
               <p className="mt-2 text-sm leading-6 text-foreground-2">Tracked source specs.</p>
             </div>
-            <div className="bg-surface px-6 py-5">
+            <div className="bg-surface px-7 py-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Open suggestions</p>
               <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-foreground">{totalSuggestions}</p>
               <p className="mt-2 text-sm leading-6 text-foreground-2">Changes awaiting review.</p>
             </div>
-            <div className="bg-surface px-6 py-5">
+            <div className="bg-surface px-7 py-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Latest activity</p>
               <p className="mt-3 text-lg font-semibold tracking-tight text-foreground">
                 {recentDoc ? formatRelativeTime(recentDoc.updated_at) : "No activity"}
@@ -146,12 +146,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="panel rounded-[2.2rem] p-6 lg:p-7">
+        <div className="panel rounded-[2.2rem] p-7 lg:p-8">
           <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
             <Sparkles className="h-3.5 w-3.5" />
             Current focus
           </p>
-          <h3 className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-foreground">
+          <h3 className="mt-5 text-3xl font-semibold tracking-[-0.05em] text-foreground">
             {docs.length === 0 ? "Create the first living spec." : "Resume the most active document."}
           </h3>
           <p className="mt-4 text-sm leading-7 text-foreground-2">
@@ -186,7 +186,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel overflow-hidden rounded-[2.2rem]">
-        <div className="border-b border-border px-6 py-5 lg:px-7">
+        <div className="border-b border-border px-7 py-7 lg:px-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Documents</p>
@@ -206,7 +206,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="border-b border-border bg-surface-2/35 px-6 py-3 lg:px-7">
+        <div className="border-b border-border bg-surface-2/35 px-7 py-3.5 lg:px-8">
           <div className="flex flex-wrap items-center gap-3 text-sm text-foreground-2">
             <span className="font-medium text-foreground">{filtered.length}</span>
             <span>{filtered.length === 1 ? "document" : "documents"}</span>
@@ -217,24 +217,24 @@ export default function DashboardPage() {
 
         <div>
           {loading ? (
-            <div className="flex min-h-72 items-center justify-center">
+            <div className="flex min-h-80 items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-foreground-3" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex min-h-72 flex-col items-center justify-center px-6 py-12 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-surface-3 text-indigo-500">
-                {search ? <Search className="h-6 w-6" /> : <FolderOpen className="h-6 w-6" />}
+            <div className="flex min-h-80 flex-col items-center justify-center px-7 py-14 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-surface-3 text-indigo-500">
+                {search ? <Search className="h-7 w-7" /> : <FolderOpen className="h-7 w-7" />}
               </div>
-              <h3 className="mt-5 text-lg font-semibold text-foreground">
+              <h3 className="mt-6 text-xl font-semibold text-foreground">
                 {search ? "No matching documents" : "No documents yet"}
               </h3>
-              <p className="mt-2 max-w-md text-sm leading-6 text-foreground-2">
+              <p className="mt-3 max-w-md text-sm leading-7 text-foreground-2">
                 {search
                   ? "Try a different search term or clear the filter to see the full workspace."
                   : "Create the first document and start using suggestions, version history, and AI checks on real product work."}
               </p>
               {!search && (
-                <Button size="lg" className="mt-6 gap-2" onClick={createDoc} loading={creating}>
+                <Button size="lg" className="mt-7 gap-2" onClick={createDoc} loading={creating}>
                   <Plus className="h-4 w-4" />
                   Create document
                 </Button>
@@ -246,13 +246,13 @@ export default function DashboardPage() {
                 <Link
                   key={doc.id}
                   href={`/dashboard/docs/${doc.id}`}
-                  className="block px-6 py-5 transition-colors hover:bg-surface-2/45 lg:px-7"
+                  className="block px-7 py-6 transition-colors hover:bg-surface-2/45 lg:px-8"
                 >
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="min-w-0">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] bg-indigo-500/12 text-indigo-500">
-                          <FileText className="h-4.5 w-4.5" />
+                      <div className="flex min-w-0 items-start gap-4">
+                        <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] bg-indigo-500/12 text-indigo-500">
+                          <FileText className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -260,7 +260,7 @@ export default function DashboardPage() {
                             <Badge variant="outline">v{doc.current_version_number}</Badge>
                             {doc.open_suggestions > 0 && <Badge variant="warning">{doc.open_suggestions} open</Badge>}
                           </div>
-                          <p className="mt-1 text-sm text-foreground-2">
+                          <p className="mt-1.5 text-sm text-foreground-2">
                             Maintained by {ownerLabel(doc.created_by)} · updated {formatRelativeTime(doc.updated_at)}
                           </p>
                         </div>

@@ -303,9 +303,9 @@ export default function DocPage() {
 
   if (isNew) {
     return (
-      <div className="space-y-4 px-1 pb-1">
-        <section className="panel rounded-[2.2rem] p-5 lg:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="space-y-6 px-1 pb-6">
+        <section className="panel rounded-[2.2rem] px-6 py-7 lg:px-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3">
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm" className="gap-1.5">
@@ -320,19 +320,19 @@ export default function DocPage() {
                   placeholder="Untitled document"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="mt-2 w-full bg-transparent text-3xl font-semibold tracking-[-0.05em] text-foreground placeholder:text-foreground-3 focus:outline-none"
+                  className="mt-3 w-full bg-transparent text-3xl font-semibold tracking-[-0.05em] text-foreground placeholder:text-foreground-3 focus:outline-none"
                   autoFocus
                 />
               </div>
             </div>
-            <Button size="lg" onClick={handleSaveNew} loading={saving} className="gap-2">
+            <Button size="lg" onClick={handleSaveNew} loading={saving} className="gap-2 shrink-0">
               <Save className="h-4 w-4" />
               Save document
             </Button>
           </div>
         </section>
 
-        <div className="panel rounded-[2.2rem] p-2 lg:p-3">
+        <div className="panel rounded-[2.2rem] p-3 lg:p-4">
           <DocEditor content={null} editable onChange={setCurrentContent} placeholder="Start writing your PRD..." />
         </div>
       </div>
@@ -340,10 +340,10 @@ export default function DocPage() {
   }
 
   return (
-    <div className="space-y-4 px-1 pb-1">
+    <div className="space-y-6 px-1 pb-6">
       <section className="panel overflow-hidden rounded-[2.2rem]">
-        <div className="border-b border-border px-5 py-5 lg:px-6">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <div className="border-b border-border px-6 py-7 lg:px-8">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <Link href="/dashboard">
@@ -357,7 +357,7 @@ export default function DocPage() {
                 {openSuggestions > 0 && <Badge variant="warning">{openSuggestions} open suggestions</Badge>}
               </div>
 
-              <div className="mt-4 min-w-0">
+              <div className="mt-5 min-w-0">
                 <input
                   type="text"
                   value={title}
@@ -369,7 +369,7 @@ export default function DocPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 xl:items-end">
+            <div className="flex flex-col gap-3 xl:items-end xl:shrink-0">
               <div className="flex flex-wrap items-center gap-2">
                 {mode === "read" && (
                   <Button variant="secondary" size="md" onClick={handleSaveVersion} loading={saving} className="gap-2">
@@ -406,33 +406,33 @@ export default function DocPage() {
         </div>
 
         <div className="grid gap-px bg-border md:grid-cols-4">
-          <div className="bg-surface px-5 py-4">
+          <div className="bg-surface px-6 py-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Current version</p>
-            <p className="mt-2 text-lg font-semibold text-foreground">v{doc?.current_version_number ?? 1}</p>
+            <p className="mt-2.5 text-lg font-semibold text-foreground">v{doc?.current_version_number ?? 1}</p>
           </div>
-          <div className="bg-surface px-5 py-4">
+          <div className="bg-surface px-6 py-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Open suggestions</p>
-            <p className="mt-2 text-lg font-semibold text-foreground">{openSuggestions}</p>
+            <p className="mt-2.5 text-lg font-semibold text-foreground">{openSuggestions}</p>
           </div>
-          <div className="bg-surface px-5 py-4">
+          <div className="bg-surface px-6 py-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Saved versions</p>
-            <p className="mt-2 text-lg font-semibold text-foreground">{versions.length}</p>
+            <p className="mt-2.5 text-lg font-semibold text-foreground">{versions.length}</p>
           </div>
-          <div className="bg-surface px-5 py-4">
+          <div className="bg-surface px-6 py-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Mode</p>
-            <p className="mt-2 text-lg font-semibold capitalize text-foreground">{MODE_LABELS[mode].title}</p>
+            <p className="mt-2.5 text-lg font-semibold capitalize text-foreground">{MODE_LABELS[mode].title}</p>
           </div>
         </div>
       </section>
 
       {mode === "history" ? (
-        <section className="grid gap-4 xl:grid-cols-[320px_1fr]">
+        <section className="grid gap-6 xl:grid-cols-[320px_1fr]">
           <aside className="panel overflow-hidden rounded-[2rem]">
-            <div className="border-b border-border px-5 py-4">
+            <div className="border-b border-border px-6 py-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Version timeline</p>
             </div>
-            <div className="space-y-2 p-4">
-              {versions.length === 0 && <p className="px-2 text-xs text-foreground-3">No versions yet.</p>}
+            <div className="space-y-2.5 p-4">
+              {versions.length === 0 && <p className="px-2 py-2 text-xs text-foreground-3">No versions yet.</p>}
               {versions.map((version) => (
                 <button
                   key={version.id}
@@ -447,14 +447,14 @@ export default function DocPage() {
                     <span className="text-sm font-semibold text-foreground">v{version.version_number}</span>
                     {version.id === versions[0]?.id && <Badge variant="success">Current</Badge>}
                   </div>
-                  <p className="mt-2 flex items-center gap-1.5 text-xs text-foreground-3">
+                  <p className="mt-2.5 flex items-center gap-1.5 text-xs text-foreground-3">
                     <Clock className="h-3.5 w-3.5" />
                     {formatRelativeTime(version.created_at)}
                   </p>
-                  <p className="mt-2 text-xs text-foreground-3">Saved by {authorLabel(version.created_by)}</p>
+                  <p className="mt-1.5 text-xs text-foreground-3">Saved by {authorLabel(version.created_by)}</p>
                   {version.ai_summary && (
                     <p className="mt-3 flex items-start gap-2 text-xs leading-6 text-foreground-2">
-                      <Sparkles className="mt-1 h-3.5 w-3.5 shrink-0 text-indigo-500" />
+                      <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500" />
                       {version.ai_summary}
                     </p>
                   )}
@@ -463,10 +463,10 @@ export default function DocPage() {
             </div>
           </aside>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             {selectedVersion?.ai_summary && (
-              <div className="panel-soft rounded-[1.8rem] px-5 py-4">
-                <p className="flex items-start gap-2 text-sm leading-7 text-foreground-2">
+              <div className="panel-soft rounded-[1.8rem] px-6 py-5">
+                <p className="flex items-start gap-3 text-sm leading-7 text-foreground-2">
                   <Sparkles className="mt-1 h-4 w-4 shrink-0 text-indigo-500" />
                   <span>
                     <span className="font-semibold text-foreground">AI changelog:</span> {selectedVersion.ai_summary}
@@ -475,7 +475,7 @@ export default function DocPage() {
               </div>
             )}
 
-            <div className="panel rounded-[2rem] p-2 lg:p-3">
+            <div className="panel rounded-[2rem] p-3 lg:p-4">
               {selectedVersionContent ? (
                 <DocEditor content={selectedVersionContent} editable={false} />
               ) : (
@@ -487,24 +487,24 @@ export default function DocPage() {
           </div>
         </section>
       ) : (
-        <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="space-y-4">
+        <section className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-6">
             {mode === "suggest" && !showSuggestForm && (
-              <div className="panel-soft rounded-[1.8rem] px-5 py-4">
+              <div className="panel-soft rounded-[1.8rem] px-6 py-5">
                 <p className="text-sm font-semibold text-foreground">Branch from the current source.</p>
-                <p className="mt-1 text-sm leading-7 text-foreground-2">
+                <p className="mt-2 text-sm leading-7 text-foreground-2">
                   Draft changes in isolation, review the diff, then publish them as a suggestion for discussion and merge.
                 </p>
               </div>
             )}
 
-            <div className="panel rounded-[2rem] p-2 lg:p-3">
+            <div className="panel rounded-[2rem] p-3 lg:p-4">
               {mode === "read" && <DocEditor content={currentContent} editable onChange={handleContentChange} />}
 
               {mode === "suggest" &&
                 (showSuggestForm ? (
-                  <div className="space-y-4 p-3 lg:p-4">
-                    <div className="px-2">
+                  <div className="space-y-5 p-4 lg:p-5">
+                    <div className="px-1">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Compare changes</p>
                       <p className="mt-2 text-sm leading-7 text-foreground-2">
                         This preview compares your draft against the current source version before it becomes a review item.
@@ -520,10 +520,10 @@ export default function DocPage() {
             </div>
           </div>
 
-          <aside className="space-y-4">
+          <aside className="space-y-6">
             {mode === "read" && (
               <div className="panel overflow-hidden rounded-[2rem]">
-                <div className="border-b border-border px-5 py-4">
+                <div className="border-b border-border px-6 py-5">
                   <div className="flex items-center justify-between gap-3">
                     <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
                       <ShieldAlert className="h-3.5 w-3.5" />
@@ -539,7 +539,7 @@ export default function DocPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3 p-5">
+                <div className="space-y-3 p-6">
                   {contradictions.length > 0 ? (
                     contradictions.map((contradiction, index) => (
                       <div key={index} className="rounded-[1.35rem] border border-amber-500/20 bg-amber-500/8 p-4">
@@ -563,11 +563,11 @@ export default function DocPage() {
 
             {mode === "suggest" && showSuggestForm && (
               <div className="panel overflow-hidden rounded-[2rem]">
-                <div className="border-b border-border px-5 py-4">
+                <div className="border-b border-border px-6 py-5">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Open suggestion</p>
                 </div>
 
-                <div className="space-y-4 p-5">
+                <div className="space-y-4 p-6">
                   <Input
                     type="text"
                     placeholder="Suggestion title"
@@ -579,14 +579,14 @@ export default function DocPage() {
                     value={suggestDesc}
                     onChange={(e) => setSuggestDesc(e.target.value)}
                     rows={5}
-                    className="w-full resize-none rounded-[1.2rem] border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-[0_18px_36px_-28px_var(--shadow-color)] placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
+                    className="w-full resize-none rounded-[1.2rem] border border-border bg-surface px-4 py-3.5 text-sm text-foreground shadow-[0_18px_36px_-28px_var(--shadow-color)] placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
                   />
 
-                  <div className="rounded-[1.3rem] border border-border bg-surface-2/70 p-4 text-sm leading-7 text-foreground-2">
+                  <div className="rounded-[1.3rem] border border-border bg-surface-2/70 px-5 py-4 text-sm leading-7 text-foreground-2">
                     Reviewers will see the diff, rationale, and comment thread before the source document changes.
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pt-1">
                     <Button variant="ghost" size="md" onClick={() => setShowSuggestForm(false)} className="flex-1 gap-2">
                       <X className="h-4 w-4" />
                       Cancel
@@ -607,7 +607,7 @@ export default function DocPage() {
             )}
 
             <div className="panel overflow-hidden rounded-[2rem]">
-              <div className="border-b border-border px-5 py-4">
+              <div className="border-b border-border px-6 py-5">
                 <div className="flex items-center justify-between gap-3">
                   <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
                     <GitPullRequest className="h-3.5 w-3.5" />
@@ -619,7 +619,7 @@ export default function DocPage() {
 
               <div className="divide-y divide-border">
                 {suggestions.length === 0 ? (
-                  <div className="px-5 py-5 text-sm leading-7 text-foreground-2">
+                  <div className="px-6 py-6 text-sm leading-7 text-foreground-2">
                     No suggestions yet. Use suggest mode to start the first review thread.
                   </div>
                 ) : (
@@ -627,13 +627,13 @@ export default function DocPage() {
                     <Link
                       key={suggestion.id}
                       href={`/dashboard/docs/${docId}/suggestions/${suggestion.id}`}
-                      className="block px-5 py-4 transition-colors hover:bg-surface-2/45"
+                      className="block px-6 py-5 transition-colors hover:bg-surface-2/45"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-foreground">{suggestion.title}</p>
                           {suggestion.description && (
-                            <p className="mt-1 line-clamp-2 text-sm leading-6 text-foreground-2">{suggestion.description}</p>
+                            <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-foreground-2">{suggestion.description}</p>
                           )}
                           <p className="mt-2 text-xs text-foreground-3">
                             {authorLabel(suggestion.created_by)} opened {formatRelativeTime(suggestion.created_at)} · {suggestion.comments} comments
@@ -655,14 +655,14 @@ export default function DocPage() {
 
             {mode === "read" && doc && (
               <div className="panel overflow-hidden rounded-[2rem]">
-                <div className="border-b border-border px-5 py-4">
+                <div className="border-b border-border px-6 py-5">
                   <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-red-500">
                     <FileWarning className="h-3.5 w-3.5" />
                     Danger zone
                   </p>
                 </div>
 
-                <div className="space-y-4 p-5">
+                <div className="space-y-4 p-6">
                   <p className="text-sm leading-7 text-foreground-2">
                     Only the document owner can remove this PRD. Deleting it will also remove its versions, suggestions, reviews,
                     and comments.
