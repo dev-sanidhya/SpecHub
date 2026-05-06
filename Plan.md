@@ -4,13 +4,16 @@
 GitHub for PRDs. Propose, review, and approve changes to product requirement documents using a PR-style workflow. Full version history, AI-written changelogs, contradiction detection, and shareable diff links.
 
 ## Current Status
-**Phase 3 - AI Features COMPLETE**
+**Phase 4 - UI Polish + Settings COMPLETE**
 
 - Phase 1 complete: all screens built with Tiptap editor, diff view, suggestion/review flows
 - Phase 2 complete: all API routes live, Supabase queries replacing demo data everywhere
 - Phase 3 complete: Claude API integration for changelog, contradiction detection, diff summary
+- Phase 4 complete: spacing overhaul, settings page, dynamic header, workspace rename API
 - ANTHROPIC_API_KEY still needs to be swapped in `.env.local` (placeholder set)
 - Build passes clean - ready for local testing via `npm run dev`
+
+---
 
 ## Architecture
 
@@ -35,61 +38,48 @@ Workspace -> Documents -> Versions (immutable snapshots)
 1. **No direct edits** - all changes go through a suggestion/approval flow
 2. **Versions are immutable** - once created, never modified
 3. **AI changelog** - Claude writes the summary when a suggestion merges
-4. **Shareable diff link** - view diffs without auth (public routes)
+4. **Shareable diff link** - view diffs without auth (public routes, planned)
 
 ## File Structure
 ```
 src/
   app/
-    page.tsx                          - Landing page
-    layout.tsx                        - Root layout with ClerkProvider
-    middleware.ts                     - Auth protection
-    sign-in/[[...sign-in]]/page.tsx   - Clerk sign-in
-    sign-up/[[...sign-up]]/page.tsx   - Clerk sign-up
+    page.tsx                                    - Landing page
+    layout.tsx                                  - Root layout with ClerkProvider
+    middleware.ts                               - Auth protection
+    sign-in/[[...sign-in]]/page.tsx             - Clerk sign-in
+    sign-up/[[...sign-up]]/page.tsx             - Clerk sign-up
     dashboard/
-      layout.tsx                      - Sidebar + nav
-      page.tsx                        - Doc list
-      docs/[id]/page.tsx              - Document editor (read/suggest/history modes)
-      docs/[id]/suggestions/[sid]/page.tsx - Suggestion detail + approval
+      layout.tsx                                - Sidebar + nav (context-aware header)
+      page.tsx                                  - Doc list / overview
+      settings/page.tsx                         - Settings page
+      docs/[id]/page.tsx                        - Document editor (read/suggest/history)
+      docs/[id]/suggestions/[sid]/page.tsx      - Suggestion detail + approval
+    api/
+      workspace/route.ts                        - GET + PATCH workspace
+      documents/route.ts                        - GET + POST documents
+      documents/[id]/route.ts                   - GET + PATCH + DELETE document
+      documents/[id]/versions/route.ts          - GET + POST versions
+      documents/[id]/versions/[vid]/route.ts    - GET specific version
+      documents/[id]/suggestions/route.ts       - GET + POST suggestions
+      documents/[id]/check/route.ts             - POST contradiction check (AI)
+      suggestions/[id]/route.ts                 - GET + PATCH suggestion status
+      suggestions/[id]/reviews/route.ts         - GET + POST reviews
+      suggestions/[id]/comments/route.ts        - GET + POST comments
+      suggestions/[id]/summary/route.ts         - POST AI diff summary
   components/
     ui/Button.tsx, Badge.tsx, Input.tsx
     editor/DocEditor.tsx, Toolbar.tsx
     diff/DiffView.tsx
-  lib/supabase.ts, utils.ts
+    ThemeToggle.tsx
+  lib/supabase.ts, utils.ts, claude.ts, api.ts
   types/database.ts
-supabase-schema.sql                   - SQL to run in Supabase dashboard
+supabase-schema.sql                             - SQL to run in Supabase dashboard
 ```
 
-## Screens
+---
 
-### Landing Page (`/`)
-- Marketing page with hero, diff demo, features grid, CTA
-- Links to /sign-up and /sign-in
-
-### Sign In / Sign Up (`/sign-in`, `/sign-up`)
-- Clerk components with dark theme styling
-- Google OAuth + GitHub OAuth enabled
-
-### Dashboard (`/dashboard`)
-- List of documents with search
-- Version number, open suggestions count, last updated
-- Link to create new doc
-
-### Document Page (`/dashboard/docs/[id]`)
-Three modes toggled in the header:
-- **Read mode** - read-only Tiptap view of current version
-- **Suggest mode** - editable Tiptap, submit as a PR-style suggestion with title + reason
-- **History mode** - version timeline sidebar + read-only view of selected version with AI changelog
-
-Right sidebar shows open/merged suggestions for that doc.
-
-### Suggestion Page (`/dashboard/docs/[id]/suggestions/[sid]`)
-- DiffView of old vs new text
-- Discussion thread (comments)
-- Review panel: approve, reject, merge buttons
-- AI summary of what the change does
-
-## Completed Features
+## Completed Phases
 
 ### Phase 1 - UI Scaffolding
 - Landing page with marketing copy and live diff demo
@@ -105,16 +95,15 @@ Right sidebar shows open/merged suggestions for that doc.
 - Version history stored as immutable snapshots
 - Comments and reviews fully wired
 
-### Phase 3 - AI Features (Claude `claude-sonnet-4-6`)
+### Phase 3 - AI Features (Claude `claude-haiku-4-5`)
 - **Changelog on merge** - auto-generated 2-4 sentence summary stored in `versions.ai_summary`
 - **Contradiction detection** - on every document edit (3s debounce), surfaces conflicting statements in sidebar
 - **Diff summary** - on suggestion detail page load, bullet-point summary of what changed
 
-## Phase 4 - UI Polish + Settings (COMPLETE)
-
+### Phase 4 - UI Polish + Settings
 - Spacing overhaul across all functional pages (dashboard, doc editor, suggestion review):
   - `space-y-4` upgraded to `space-y-6` on all main content areas
-  - Panel headers and stats cells now use `px-7 py-6` / `px-7 py-8` for breathing room
+  - Panel headers use `px-7 py-7/py-8` for breathing room
   - Sidebar panel interiors: `p-5` upgraded to `p-6` throughout
   - Document list rows: taller, wider icon, more comfortable row padding
   - Empty states: larger icons, more vertical padding
@@ -123,23 +112,177 @@ Right sidebar shows open/merged suggestions for that doc.
   - Appearance (theme toggle in context)
   - AI features overview (contradiction detection, changelog, diff summary)
   - Account details (read-only Clerk data)
-- Sidebar: Settings nav item added, nav `exact` matching prevents false active states
-- Header: now context-aware - shows the current section label and a relevant subtitle per route
+- Sidebar: Settings nav item added, `exact` matching prevents false active states on nested routes
+- Header: now context-aware - shows the correct section label and subtitle per route
 - Workspace API: `PATCH /api/workspace` added for name updates
 
-## Next Steps
+---
 
-### Phase 5 - Integrations
-- Slack webhook on suggestion opened/merged
-- Notion import (paste Notion URL, fetch content)
-- Shareable public diff links (no auth required)
+## Honest Product Assessment
 
-### Phase 6 - Production
-- Real-time updates (Supabase realtime subscriptions)
-- Keyboard shortcuts
-- Mobile responsive tweaks
-- Deploy to Vercel
+### What works well
+- The concept is solid and differentiated - treating specs like code with PR-style reviews is the right mental model
+- Visual design is clean and consistent - the panel system, indigo accent, dark/light theming
+- AI integrations are real and genuinely useful (contradiction detection is actually valuable for PRDs)
+- Tech stack is production-grade: Clerk auth, Supabase RLS, Claude API, Vercel-ready
 
-## Free vs Paid
-**Free:** 3 docs, 3 members, full history, suggest/approve flow, 10 AI changelogs/month
-**Paid ($18/user/month):** Unlimited docs, unlimited AI, Slack integration, audit export, custom approval chains
+### What is actually broken (not just missing)
+1. **This is a single-player app pretending to be a collaboration tool.** The `workspace_members` table exists in the DB schema but there is zero UI to invite anyone. A product whose core value is "route changes through explicit review" fails completely if only one person can ever use it.
+2. **Reviewer identity is meaningless.** Every action shows `@userId.slice(0,8)` - truncated noise that tells you nothing about who approved, commented, or merged. The entire audit trail is unreadable.
+3. **The contradiction check is a cost bomb.** It fires on every edit with a 3-second debounce. On an active document, that's Claude API calls every few seconds. Will burn through API budget fast in production. Should be on-demand.
+4. **No separation between author and reviewer.** You can approve your own suggestions and merge them. The product enforces the form of a review workflow but not the substance.
+5. **The `docs/new` route loses drafts.** No autosave, no draft persistence. Navigate away and your content is gone.
+
+---
+
+## Roadmap
+
+### Phase 5 - Team Collaboration (CRITICAL - product is incomplete without this)
+
+This is the highest priority. Without it, SpecHub cannot be used as intended by any real team.
+
+**Team invites and member management**
+- Invite teammates by email (send invite link via Resend or similar)
+- Invite link flow - generate a token, store in DB, redeem to join workspace
+- Members page in settings showing all members with their roles
+- Role management: owner, editor, reviewer, viewer
+- Remove member option (owner only)
+- The `workspace_members` table already exists in Supabase - this is mostly UI + invite API
+
+**Real user profiles throughout the UI**
+- Replace every `@userId.slice(0,8)` with the user's actual name and avatar
+- Clerk provides full name, profile image, and email - just needs to be fetched and cached
+- Affects: suggestion headers, comments, reviews, version history, dashboard owner labels
+- Consider a lightweight user cache endpoint (`/api/users/[id]`) that fetches from Clerk
+
+**In-app notification inbox**
+- Bell icon in the header with unread count badge
+- Notification types: "Someone opened a suggestion on your doc", "Your suggestion was approved/rejected/merged", "Someone commented on a suggestion you're watching"
+- `notifications` table in Supabase: `id, user_id, type, payload (JSONB), read, created_at`
+- Triggered server-side when suggestions, reviews, and comments are created
+
+---
+
+### Phase 6 - Core Workflow Improvements
+
+**Document templates**
+- Template picker modal on new document creation
+- Pre-built templates: Feature Spec, API Contract, Bug Report, Roadmap Item, RFC, Architecture Decision Record
+- Stored as static Tiptap JSON - no DB changes needed
+- Template selector replaces the blank editor on the `/docs/new` route
+
+**On-demand AI contradiction check**
+- Remove the auto-debounce firing on every edit
+- Replace with a "Run checks" button in the sidebar that triggers on click
+- Cache the result against the current content hash until the doc is next saved
+- Fixes the API cost problem, makes the feature feel deliberate and trustworthy
+
+**Rich editor additions**
+- Tables - critical for spec work (comparison tables, API parameter tables, feature matrices). Tiptap has `@tiptap/extension-table` ready to add
+- Slash command menu - type `/` to get a popover: `/heading`, `/table`, `/code block`, `/bullet list`, `/callout`
+- Image paste/upload - drag or paste images into the editor, upload to Supabase Storage
+- Callout/note blocks - highlighted boxes for warnings, notes, and important callouts in specs
+
+**Activity feed**
+- A dedicated page or collapsible sidebar panel showing recent events across the workspace
+- Events: suggestion opened, suggestion merged/rejected, comment posted, version saved, member joined
+- Replaces the need to manually check each document for activity
+- Powered by the same `notifications` table from Phase 5, scoped to workspace not just user
+
+**Full-text document search**
+- Search inside document content, not just titles
+- Supabase has built-in `to_tsvector` full-text search on JSONB - no external service needed
+- Search bar in the dashboard that queries across all docs in the workspace
+- Results show matching doc title + a snippet of the matching content
+
+**Draft autosave**
+- Autosave editor content to `localStorage` every 10 seconds
+- On page load, detect if a saved draft exists and offer to restore it
+- Prevents losing work when accidentally closing the tab
+- Key: `spechub:draft:[docId]` for existing docs, `spechub:draft:new` for new docs
+
+---
+
+### Phase 7 - Power Features and Differentiation
+
+**Custom approval policies**
+- Per-document setting: minimum approvals required before merge (1, 2, or all reviewers)
+- Specific required reviewer - designate a person whose approval is mandatory
+- The merge button should reflect policy: "2/3 approvals" progress indicator
+- Stored in a `document_settings` table or as a JSONB column on documents
+
+**Public shareable diff links**
+- A URL that shows a suggestion's diff, rationale, and approval state without requiring login
+- Useful for external stakeholder reviews, design reviews, contractor handoffs
+- Route: `/share/[token]` - a signed token that resolves to a suggestion ID
+- Read-only: viewers can see everything but cannot approve, comment, or merge
+- Mentioned in the original roadmap - genuinely differentiating
+
+**Document locking**
+- When a suggestion is open and under review, soft-lock the base document from direct edits
+- Prevents the base version from shifting under an active review (makes the diff stale)
+- Lock indicator in the doc header: "Locked - suggestion #3 is under review"
+- Owner can force-unlock with a confirmation dialog
+
+**Slack integration**
+- Webhook URL configurable per workspace in Settings
+- Triggers: suggestion opened, suggestion merged, suggestion rejected
+- Payload: doc title, suggestion title, author, link back to SpecHub
+- Standard for B2B tools - makes SpecHub part of an existing team's workflow
+
+**Export**
+- Export the current version of a doc as clean Markdown
+- Export as PDF (headless browser render via a Vercel serverless function)
+- Specs should not be trapped inside the app - export is a trust signal for real teams
+
+---
+
+### Phase 8 - Polish and Scale
+
+**Keyboard shortcuts and command palette**
+- `Cmd+S` to save a version
+- `Cmd+K` command palette: jump to document, create new doc, run AI checks, open suggestion
+- Shortcut hints shown in tooltips on buttons
+- Essential feel for a developer-facing tool
+
+**Real-time presence**
+- Supabase Realtime subscriptions showing who else is viewing a document
+- "2 people viewing" indicator in the doc header with avatar stack
+- Live suggestion updates - if someone approves while you're on the page, the count updates without refresh
+- Full live cursors are complex and probably not worth it for a spec tool
+
+**Archive instead of delete**
+- Soft delete: archive a doc rather than destroying it permanently
+- Archived docs hidden from the main list but accessible via an "Archived" filter
+- Matches how real teams work - specs don't truly die, they become stale
+- Removes the scary "Danger zone" from everyday use
+
+**Mobile navigation**
+- The sidebar disappears on mobile with no replacement
+- A bottom tab bar on mobile: Overview, Docs, Settings
+- The Tiptap editor is usable on mobile with some CSS tweaks to toolbar wrapping
+
+**Multiple workspaces**
+- Currently one workspace per user, personal only
+- Allow creating additional named workspaces (e.g., one per product team or client)
+- Workspace switcher in the sidebar header
+- Relevant for agencies, contractors, or users working across multiple products
+
+---
+
+## Free vs Paid Tiers
+
+| Feature | Free | Paid ($18/user/month) |
+|---|---|---|
+| Documents | 3 | Unlimited |
+| Workspace members | 3 | Unlimited |
+| Version history | Full | Full |
+| Suggest/approve flow | Yes | Yes |
+| AI changelogs | 10/month | Unlimited |
+| AI contradiction checks | On-demand | On-demand |
+| Custom approval policies | No | Yes |
+| Slack integration | No | Yes |
+| Public shareable links | No | Yes |
+| Export (Markdown + PDF) | Markdown only | Both |
+| Audit log export | No | Yes |
+| Priority support | No | Yes |
