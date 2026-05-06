@@ -3,22 +3,33 @@
 import { SignOutButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, FilePlus2, LayoutDashboard, LogOut, Orbit, Plus, Sparkles } from "lucide-react";
+import { ArrowUpRight, FilePlus2, LayoutDashboard, LogOut, Orbit, Plus, Settings, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/docs/new", label: "New document", icon: FilePlus2 },
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/dashboard/docs/new", label: "New document", icon: FilePlus2, exact: false },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings, exact: false },
 ];
+
+function getHeaderContext(pathname: string) {
+  if (pathname === "/dashboard") return { label: "Overview", title: "All documents in your workspace" };
+  if (pathname.startsWith("/dashboard/settings")) return { label: "Settings", title: "Manage workspace and preferences" };
+  if (pathname.includes("/suggestions/")) return { label: "Suggestion review", title: "Review and approve proposed changes" };
+  if (pathname.startsWith("/dashboard/docs/new")) return { label: "New document", title: "Create a new spec" };
+  if (pathname.startsWith("/dashboard/docs/")) return { label: "Document", title: "Living product spec" };
+  return { label: "Workspace", title: "Product docs that can survive change" };
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { label, title } = getHeaderContext(pathname);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-[1680px] gap-4 px-3 py-3 lg:px-4 lg:py-4">
+      <div className="mx-auto flex min-h-screen max-w-[1680px] gap-5 px-3 py-3 lg:px-4 lg:py-4">
         <aside className="panel hidden w-[304px] shrink-0 rounded-[2rem] lg:flex lg:flex-col">
           <div className="border-b border-border/80 px-6 py-6">
             <Link href="/dashboard" className="flex items-center gap-3">
@@ -39,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 Workspace
               </p>
               <p className="mt-3 text-xl font-semibold tracking-tight text-foreground">Shipping specs without losing context.</p>
-              <p className="mt-2 text-sm leading-7 text-foreground-2">
+              <p className="mt-2.5 text-sm leading-7 text-foreground-2">
                 Keep changes, approvals, and AI summaries in one system instead of spread across docs and chat.
               </p>
               <Link
@@ -54,11 +65,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <nav className="flex-1 px-4 py-2">
             <div className="space-y-1.5">
-              {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+              {NAV_ITEMS.map(({ href, label: navLabel, icon: Icon, exact }) => {
+                const active = exact ? pathname === href : pathname.startsWith(href);
                 return (
                   <Link
-                    key={`${href}-${label}`}
+                    key={`${href}-${navLabel}`}
                     href={href}
                     className={cn(
                       "flex items-center justify-between gap-3 rounded-[1.4rem] px-4 py-3.5 text-sm font-medium transition-all",
@@ -69,7 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   >
                     <span className="flex items-center gap-3">
                       <Icon className={cn("h-4 w-4", active ? "text-indigo-500" : "text-foreground-3")} />
-                      {label}
+                      {navLabel}
                     </span>
                     <ArrowUpRight className={cn("h-3.5 w-3.5", active ? "text-indigo-500" : "text-foreground-3")} />
                   </Link>
@@ -103,15 +114,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="panel rounded-[2rem] border-border/80 bg-background/60 px-5 py-4 backdrop-blur-xl lg:px-7">
+          <header className="panel rounded-[2rem] border-border/80 bg-background/60 px-6 py-5 backdrop-blur-xl lg:px-8">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Workspace
+                  {label}
                 </p>
-                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-                  Product docs that can survive change
+                <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-foreground">
+                  {title}
                 </h1>
               </div>
 
@@ -134,7 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 pt-4">{children}</main>
+          <main className="min-w-0 flex-1 pt-5">{children}</main>
         </div>
       </div>
     </div>
