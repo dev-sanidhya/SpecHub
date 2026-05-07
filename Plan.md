@@ -4,12 +4,13 @@
 GitHub for PRDs. Propose, review, and approve changes to product requirement documents using a PR-style workflow. Full version history, AI-written changelogs, contradiction detection, and shareable diff links.
 
 ## Current Status
-**Phase 4 - UI Polish + Settings COMPLETE**
+**Phase 4b - Bug Fixes COMPLETE**
 
 - Phase 1 complete: all screens built with Tiptap editor, diff view, suggestion/review flows
 - Phase 2 complete: all API routes live, Supabase queries replacing demo data everywhere
 - Phase 3 complete: Claude API integration for changelog, contradiction detection, diff summary
 - Phase 4 complete: spacing overhaul, settings page, dynamic header, workspace rename API
+- Phase 4b complete: real user identity, on-demand AI checks, self-approval blocked, draft autosave
 - ANTHROPIC_API_KEY still needs to be swapped in `.env.local` (placeholder set)
 - Build passes clean - ready for local testing via `npm run dev`
 
@@ -127,11 +128,11 @@ supabase-schema.sql                             - SQL to run in Supabase dashboa
 - Tech stack is production-grade: Clerk auth, Supabase RLS, Claude API, Vercel-ready
 
 ### What is actually broken (not just missing)
-1. **This is a single-player app pretending to be a collaboration tool.** The `workspace_members` table exists in the DB schema but there is zero UI to invite anyone. A product whose core value is "route changes through explicit review" fails completely if only one person can ever use it.
-2. **Reviewer identity is meaningless.** Every action shows `@userId.slice(0,8)` - truncated noise that tells you nothing about who approved, commented, or merged. The entire audit trail is unreadable.
-3. **The contradiction check is a cost bomb.** It fires on every edit with a 3-second debounce. On an active document, that's Claude API calls every few seconds. Will burn through API budget fast in production. Should be on-demand.
-4. **No separation between author and reviewer.** You can approve your own suggestions and merge them. The product enforces the form of a review workflow but not the substance.
-5. **The `docs/new` route loses drafts.** No autosave, no draft persistence. Navigate away and your content is gone.
+1. **This is a single-player app pretending to be a collaboration tool.** The `workspace_members` table exists in the DB schema but there is zero UI to invite anyone. A product whose core value is "route changes through explicit review" fails completely if only one person can ever use it. *(Phase 5 - not yet fixed)*
+2. ~~**Reviewer identity is meaningless.** Every action shows `@userId.slice(0,8)` - truncated noise.~~ **FIXED** - Real names and avatars now shown everywhere via `/api/users/[id]` Clerk lookup, `useUserInfo` hook, and `UserChip` component. Module-level cache prevents duplicate fetches.
+3. ~~**The contradiction check is a cost bomb.**~~ **FIXED** - Removed auto-debounce. Now on-demand via a "Run" button in the Checks panel. Shows last-checked timestamp. No more API calls on every keystroke.
+4. ~~**No separation between author and reviewer.** You can approve your own suggestions.~~ **FIXED** - Approve button is hidden when the current user is the suggestion author. Review state panel shows a clear "Another team member needs to approve this" message to the author.
+5. ~~**The `docs/new` route loses drafts.**~~ **FIXED** - Autosaves to `localStorage` every 5 seconds of inactivity. On page load, detects drafts under 24 hours old and shows a restore/discard banner. Draft is cleared on successful version save.
 
 ---
 
