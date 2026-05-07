@@ -4,14 +4,16 @@
 GitHub for PRDs. Propose, review, and approve changes to product requirement documents using a PR-style workflow. Full version history, AI-written changelogs, contradiction detection, and shareable diff links.
 
 ## Current Status
-**Phase 4b - Bug Fixes COMPLETE**
+**Phase 5 - Team Collaboration COMPLETE**
 
 - Phase 1 complete: all screens built with Tiptap editor, diff view, suggestion/review flows
 - Phase 2 complete: all API routes live, Supabase queries replacing demo data everywhere
 - Phase 3 complete: Claude API integration for changelog, contradiction detection, diff summary
 - Phase 4 complete: spacing overhaul, settings page, dynamic header, workspace rename API
 - Phase 4b complete: real user identity, on-demand AI checks, self-approval blocked, draft autosave
+- Phase 5 complete: invite system, member management, notification bell, workspace membership for non-owners
 - ANTHROPIC_API_KEY still needs to be swapped in `.env.local` (placeholder set)
+- **Run Phase 5 SQL additions** in Supabase dashboard (bottom of supabase-schema.sql)
 - Build passes clean - ready for local testing via `npm run dev`
 
 ---
@@ -138,29 +140,17 @@ supabase-schema.sql                             - SQL to run in Supabase dashboa
 
 ## Roadmap
 
-### Phase 5 - Team Collaboration (CRITICAL - product is incomplete without this)
+### Phase 5 - Team Collaboration - COMPLETE
 
-This is the highest priority. Without it, SpecHub cannot be used as intended by any real team.
-
-**Team invites and member management**
-- Invite teammates by email (send invite link via Resend or similar)
-- Invite link flow - generate a token, store in DB, redeem to join workspace
-- Members page in settings showing all members with their roles
-- Role management: owner, editor, reviewer, viewer
-- Remove member option (owner only)
-- The `workspace_members` table already exists in Supabase - this is mostly UI + invite API
-
-**Real user profiles throughout the UI**
-- Replace every `@userId.slice(0,8)` with the user's actual name and avatar
-- Clerk provides full name, profile image, and email - just needs to be fetched and cached
-- Affects: suggestion headers, comments, reviews, version history, dashboard owner labels
-- Consider a lightweight user cache endpoint (`/api/users/[id]`) that fetches from Clerk
-
-**In-app notification inbox**
-- Bell icon in the header with unread count badge
-- Notification types: "Someone opened a suggestion on your doc", "Your suggestion was approved/rejected/merged", "Someone commented on a suggestion you're watching"
-- `notifications` table in Supabase: `id, user_id, type, payload (JSONB), read, created_at`
-- Triggered server-side when suggestions, reviews, and comments are created
+**What was built:**
+- `workspace_invites` table + `notifications` table added to schema (run Phase 5 SQL in Supabase)
+- Token-based invite links: owner generates link in Settings, sends it out-of-band
+- `/invite/[token]` page - shows workspace name + inviter, handles sign-in redirect, join on click
+- `GET /api/workspace` updated to support non-owner members (checks `workspace_members` too)
+- Settings page Team section: member list with avatars + roles, invite form, pending invites with revoke
+- Notification bell in header: unread dot, dropdown with last 30 notifications, mark-all-read
+- Notification triggers on: suggestion opened, review posted, suggestion merged/rejected, comment posted
+- `src/lib/notifications.ts` - fire-and-forget helper used by all trigger points
 
 ---
 
