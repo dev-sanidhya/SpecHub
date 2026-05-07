@@ -303,6 +303,55 @@ textarea {
   color: var(--foreground);
 }
 
+/* Tiptap table styles */
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.6rem 0;
+  font-size: 0.95rem;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  border: 1px solid var(--border-2);
+  table-layout: fixed;
+}
+
+.tiptap table td,
+.tiptap table th {
+  border: 1px solid var(--border-2);
+  padding: 0.6rem 0.95rem;
+  vertical-align: top;
+  min-width: 80px;
+  line-height: 1.7;
+  word-break: break-word;
+  position: relative;
+}
+
+.tiptap table th {
+  background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.tiptap table td {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  color: var(--foreground-2);
+}
+
+.tiptap table tr:last-child td {
+  border-bottom: none;
+}
+
+.tiptap table .selectedCell::after {
+  background: var(--accent-subtle);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
 .diff-add {
   border-radius: 0.35rem;
   background: var(--add);

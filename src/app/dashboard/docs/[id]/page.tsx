@@ -26,6 +26,7 @@ import { DiffView, jsonToText } from "@/components/diff/DiffView";
 import { Input } from "@/components/ui/Input";
 import { UserChip } from "@/components/UserChip";
 import { formatRelativeTime } from "@/lib/utils";
+import { TEMPLATES, type Template } from "@/lib/templates";
 
 type Mode = "read" | "suggest" | "history";
 type SuggestionStatus = "open" | "approved" | "rejected" | "merged";
@@ -86,6 +87,7 @@ export default function DocPage() {
   const isNew = docId === "new";
 
   const [mode, setMode] = useState<Mode>("read");
+  const [templateStage, setTemplateStage] = useState<"pick" | "editing">(isNew ? "pick" : "editing");
   const [doc, setDoc] = useState<Doc | null>(null);
   const [title, setTitle] = useState("Untitled");
   const [currentContent, setCurrentContent] = useState<object>({ type: "doc", content: [] });
@@ -360,18 +362,80 @@ export default function DocPage() {
 
   const openSuggestions = suggestions.filter((suggestion) => suggestion.status === "open").length;
 
-  if (isNew) {
+  if (isNew && templateStage === "pick") {
+    const handlePickTemplate = (template: Template | null) => {
+      if (template) {
+        setCurrentContent(template.content);
+        setSuggestContent(template.content);
+        setTitle(template.defaultTitle);
+      }
+      setTemplateStage("editing");
+    };
+
     return (
       <div className="space-y-6 px-1 pb-6">
-        <section className="panel rounded-[2.2rem] px-6 py-7 lg:px-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
+        <section className="panel overflow-hidden rounded-[2.2rem]">
+          <div className="border-b border-border px-7 py-8 lg:px-8">
+            <div className="flex items-center gap-3">
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm" className="gap-1.5">
                   <ChevronLeft className="h-4 w-4" />
                   Back
                 </Button>
               </Link>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">New document</p>
+                <p className="mt-1 text-sm text-foreground-2">Choose a template or start from scratch</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-7 lg:p-8">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Blank */}
+              <button
+                type="button"
+                onClick={() => handlePickTemplate(null)}
+                className="group flex flex-col gap-3 rounded-[1.6rem] border border-border bg-surface-2/50 p-5 text-left transition-all hover:-translate-y-0.5 hover:border-indigo-500/30 hover:bg-indigo-500/5 hover:shadow-[0_16px_40px_-20px_rgba(99,102,241,0.18)]"
+              >
+                <span className="text-2xl">📄</span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Blank document</p>
+                  <p className="mt-1 text-xs text-foreground-3">Start with an empty editor</p>
+                </div>
+              </button>
+
+              {TEMPLATES.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => handlePickTemplate(tpl)}
+                  className="group flex flex-col gap-3 rounded-[1.6rem] border border-border bg-surface-2/50 p-5 text-left transition-all hover:-translate-y-0.5 hover:border-indigo-500/30 hover:bg-indigo-500/5 hover:shadow-[0_16px_40px_-20px_rgba(99,102,241,0.18)]"
+                >
+                  <span className="text-2xl">{tpl.emoji}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{tpl.name}</p>
+                    <p className="mt-1 text-xs text-foreground-3">{tpl.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (isNew) {
+    return (
+      <div className="space-y-6 px-1 pb-6">
+        <section className="panel rounded-[2.2rem] px-6 py-7 lg:px-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setTemplateStage("pick")}>
+                <ChevronLeft className="h-4 w-4" />
+                Templates
+              </Button>
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">New document</p>
                 <input
@@ -392,7 +456,7 @@ export default function DocPage() {
         </section>
 
         <div className="panel rounded-[2.2rem] p-3 lg:p-4">
-          <DocEditor content={null} editable onChange={setCurrentContent} placeholder="Start writing your PRD..." />
+          <DocEditor content={currentContent} editable onChange={setCurrentContent} placeholder="Start writing your PRD..." />
         </div>
       </div>
     );

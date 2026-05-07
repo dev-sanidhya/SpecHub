@@ -1,4 +1,5 @@
 import { getAuthAndClient, ok, err } from "@/lib/api";
+import { tiptapToText } from "@/lib/tiptapToText";
 
 // GET /api/documents/:id/versions - all versions for a doc
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -48,12 +49,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   if (verErr) return err(verErr.message, 500);
 
-  // Update document pointer
+  // Update document pointer + searchable text
   await db!
     .from("documents")
     .update({
       current_version_id: version.id,
       current_version_number: nextNumber,
+      content_text: tiptapToText(content),
     })
     .eq("id", id);
 

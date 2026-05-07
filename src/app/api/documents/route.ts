@@ -1,21 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getAuthAndClient, ok, err } from "@/lib/api";
 
-// GET /api/documents?workspace_id=xxx
+// GET /api/documents?workspace_id=xxx&q=search
 export async function GET(req: Request) {
-  const { error, userId, db } = await getAuthAndClient();
+  const { error, db } = await getAuthAndClient();
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const workspaceId = searchParams.get("workspace_id");
   if (!workspaceId) return err("workspace_id required");
 
-  const { data, error: dbErr } = await db!
+  const q = searchParams.get("q")?.trim() ?? "";
+
+  let query = db!
     .from("documents")
     .select("id, title, current_version_number, created_by, created_at, updated_at")
     .eq("workspace_id", workspaceId)
-    .eq("created_by", userId!)
     .order("updated_at", { ascending: false });
+
+  if (q) {
+    // Search title and content_text with case-insensitive substring match
+    query = query.or(`title.ilike.%${q}%,content_text.ilike.%${q}%`);
+  }
+
+  const { data, error: dbErr } = await query;
 
   if (dbErr) return err(dbErr.message, 500);
 

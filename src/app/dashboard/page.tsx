@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -42,7 +42,10 @@ export default function DashboardPage() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const workspaceRef = useRef<Workspace | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -50,6 +53,7 @@ export default function DashboardPage() {
       const wsRes = await fetch("/api/workspace");
       const ws = await wsRes.json();
       setWorkspace(ws);
+      workspaceRef.current = ws;
 
       const docsRes = await fetch(`/api/documents?workspace_id=${ws.id}`);
       setDocs(await docsRes.json());
@@ -64,9 +68,40 @@ export default function DashboardPage() {
     const timer = setTimeout(() => {
       void loadData();
     }, 0);
-
     return () => clearTimeout(timer);
   }, [loadData]);
+
+  // Debounced search - fires 350ms after user stops typing
+  useEffect(() => {
+    if (!workspaceRef.current) return;
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!search.trim()) {
+      // Empty search - refetch all docs without query param
+      searchTimer.current = setTimeout(async () => {
+        setSearching(true);
+        try {
+          const res = await fetch(`/api/documents?workspace_id=${workspaceRef.current!.id}`);
+          setDocs(await res.json());
+        } catch (e) { console.error(e); }
+        finally { setSearching(false); }
+      }, 0);
+      return;
+    }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(
+          `/api/documents?workspace_id=${workspaceRef.current!.id}&q=${encodeURIComponent(search.trim())}`
+        );
+        setDocs(await res.json());
+      } catch (e) { console.error(e); }
+      finally { setSearching(false); }
+    }, 350);
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   async function createDoc() {
     if (!workspace) return;
@@ -85,10 +120,7 @@ export default function DashboardPage() {
     }
   }
 
-  const filtered = useMemo(
-    () => docs.filter((doc) => doc.title.toLowerCase().includes(search.toLowerCase())),
-    [docs, search]
-  );
+  const filtered = docs; // filtering now happens server-side via API
 
   const totalSuggestions = docs.reduce((sum, doc) => sum + doc.open_suggestions, 0);
   const recentDoc = docs
@@ -192,10 +224,14 @@ export default function DashboardPage() {
             </div>
 
             <div className="relative w-full lg:max-w-sm">
-              <Search className="absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-foreground-3" />
+              {searching ? (
+                <Loader2 className="absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 animate-spin text-foreground-3" />
+              ) : (
+                <Search className="absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-foreground-3" />
+              )}
               <Input
                 type="text"
-                placeholder="Search documents..."
+                placeholder="Search titles and content..."
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 className="pl-11"

@@ -4,7 +4,7 @@ import { type Editor } from "@tiptap/react";
 import {
   Bold, Italic, Underline, Strikethrough, Code,
   Heading1, Heading2, Heading3, List, ListOrdered,
-  Quote, Minus, Link, Highlighter,
+  Quote, Minus, Link, Highlighter, Table,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +63,11 @@ export function Toolbar({ editor }: ToolbarProps) {
         onClick={() => { const url = window.prompt("Enter URL"); if (url) editor.chain().focus().setLink({ href: url }).run(); }}
         active={editor.isActive("link")} title="Link"
       ><Link className="w-3.5 h-3.5" /></ToolbarButton>
+      <Divider />
+      <ToolbarButton
+        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        active={editor.isActive("table")} title="Insert table"
+      ><Table className="w-3.5 h-3.5" /></ToolbarButton>
       </div>
     </div>
   );

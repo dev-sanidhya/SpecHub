@@ -2,6 +2,7 @@
 import { getAuthAndClient, ok, err } from "@/lib/api";
 import { generateChangelog } from "@/lib/claude";
 import { createNotification } from "@/lib/notifications";
+import { tiptapToText } from "@/lib/tiptapToText";
 
 // GET /api/suggestions/:id - full suggestion with base version content + AI diff summary
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -101,6 +102,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           .update({
             current_version_id: (newVersion as any).id,
             current_version_number: nextNumber,
+            content_text: tiptapToText(s.proposed_content),
           })
           .eq("id", s.document_id);
       }
