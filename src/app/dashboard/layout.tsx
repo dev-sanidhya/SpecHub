@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, FilePlus2, LayoutDashboard, LogOut, Orbit, Plus, Settings, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -124,6 +125,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-foreground">
                   {title}
                 </h1>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <NotificationBell />
               </div>
 
               <div className="flex items-center gap-2 lg:hidden">

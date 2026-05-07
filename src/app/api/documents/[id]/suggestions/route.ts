@@ -1,4 +1,5 @@
 import { getAuthAndClient, ok, err } from "@/lib/api";
+import { createNotification } from "@/lib/notifications";
 
 // GET /api/documents/:id/suggestions
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -62,5 +63,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .single();
 
   if (dbErr) return err(dbErr.message, 500);
+
+  // Notify the document creator (if different from the suggestion author)
+  try {
+    const { data: doc } = await db!
+      .from("documents")
+      .select("created_by, title, workspace_id")
+      .eq("id", id)
+      .single();
+    const d = doc as { created_by: string; title: string; workspace_id: string } | null;
+    if (d && d.created_by !== userId!) {
+      void createNotification(d.created_by, d.workspace_id, "suggestion_opened", {
+        suggestion_id: (data as { id: string }).id,
+        suggestion_title: title as string,
+        doc_id: id,
+        doc_title: d.title,
+        actor_id: userId!,
+      });
+    }
+  } catch {
+    // non-critical
+  }
+
   return ok(data, 201);
 }

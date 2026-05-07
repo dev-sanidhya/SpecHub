@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getAuthAndClient, ok, err } from "@/lib/api";
 import { generateChangelog } from "@/lib/claude";
+import { createNotification } from "@/lib/notifications";
 
 // GET /api/suggestions/:id - full suggestion with base version content + AI diff summary
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -114,5 +115,36 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     .single();
 
   if (dbErr) return err(dbErr.message, 500);
+
+  // Notify suggestion author on merge or reject
+  if (status === "merged" || status === "rejected") {
+    try {
+      const updated = data as any;
+      if (updated && updated.created_by !== userId!) {
+        const { data: doc } = await db!
+          .from("documents")
+          .select("workspace_id")
+          .eq("id", updated.document_id)
+          .single();
+        const wsId = (doc as any)?.workspace_id;
+        if (wsId) {
+          void createNotification(
+            updated.created_by,
+            wsId,
+            status === "merged" ? "suggestion_merged" : "suggestion_rejected",
+            {
+              suggestion_id: id,
+              suggestion_title: updated.title,
+              doc_id: updated.document_id,
+              actor_id: userId!,
+            }
+          );
+        }
+      }
+    } catch {
+      // non-critical
+    }
+  }
+
   return ok(data);
 }

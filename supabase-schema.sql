@@ -121,3 +121,41 @@ create trigger documents_updated_at
 create trigger suggestions_updated_at
   before update on suggestions
   for each row execute function update_updated_at();
+
+-- ============================================================
+-- Phase 5: Team Collaboration (run these additions separately)
+-- ============================================================
+
+-- Workspace invites
+create table workspace_invites (
+  id uuid primary key default uuid_generate_v4(),
+  workspace_id uuid references workspaces(id) on delete cascade,
+  email text not null,
+  token text unique not null,
+  invited_by text not null,
+  created_at timestamptz default now(),
+  expires_at timestamptz not null,
+  accepted_at timestamptz
+);
+
+-- In-app notifications
+create table notifications (
+  id uuid primary key default uuid_generate_v4(),
+  user_id text not null,
+  workspace_id uuid references workspaces(id) on delete cascade,
+  type text not null,
+  payload jsonb not null default '{}',
+  read boolean not null default false,
+  created_at timestamptz default now()
+);
+
+-- Indexes
+create index on workspace_invites(token);
+create index on workspace_invites(workspace_id);
+create index on notifications(user_id);
+create index on notifications(workspace_id);
+create index on notifications(read);
+
+-- RLS
+alter table workspace_invites enable row level security;
+alter table notifications enable row level security;

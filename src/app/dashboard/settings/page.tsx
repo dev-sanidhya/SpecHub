@@ -2,11 +2,29 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Check, Globe2, Palette, Sparkles, User2 } from "lucide-react";
+import { Check, Copy, Globe2, Loader2, Palette, Sparkles, Trash2, User2, UserPlus, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import Image from "next/image";
+
+interface Member {
+  user_id: string;
+  role: string;
+  joined_at: string;
+  name: string;
+  imageUrl: string | null;
+  email: string | null;
+}
+
+interface PendingInvite {
+  id: string;
+  email: string;
+  token: string;
+  created_at: string;
+  expires_at: string;
+}
 
 const AI_FEATURES = [
   {
@@ -32,16 +50,103 @@ export default function SettingsPage() {
   const [originalName, setOriginalName] = useState("");
   const [savingWorkspace, setSavingWorkspace] = useState(false);
   const [workspaceSaved, setWorkspaceSaved] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+
+  // Members
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [removingMember, setRemovingMember] = useState<string | null>(null);
+
+  // Invites
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [newInviteLink, setNewInviteLink] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [revokingToken, setRevokingToken] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/workspace")
       .then((r) => r.json())
-      .then((ws: { name?: string }) => {
+      .then((ws: { name?: string; id?: string; owner_id?: string }) => {
         setWorkspaceName(ws.name ?? "My Workspace");
         setOriginalName(ws.name ?? "My Workspace");
+        setIsOwner(ws.owner_id === user?.id);
       })
       .catch(console.error);
+  }, [user?.id]);
+
+  const loadMembers = useCallback(async () => {
+    setLoadingMembers(true);
+    try {
+      const [membersRes, invitesRes] = await Promise.all([
+        fetch("/api/workspace/members").then((r) => r.json()),
+        fetch("/api/workspace/invites").then((r) => r.json()),
+      ]);
+      setMembers(Array.isArray(membersRes) ? membersRes : []);
+      setPendingInvites(Array.isArray(invitesRes) ? invitesRes : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingMembers(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadMembers();
+  }, [loadMembers]);
+
+  const handleRemoveMember = useCallback(async (targetUserId: string) => {
+    setRemovingMember(targetUserId);
+    try {
+      await fetch(`/api/workspace/members/${targetUserId}`, { method: "DELETE" });
+      await loadMembers();
+    } finally {
+      setRemovingMember(null);
+    }
+  }, [loadMembers]);
+
+  const handleSendInvite = useCallback(async () => {
+    if (!inviteEmail.trim()) return;
+    setSendingInvite(true);
+    setNewInviteLink(null);
+    try {
+      const res = await fetch("/api/workspace/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim() }),
+      });
+      const data = await res.json() as { token?: string };
+      if (data.token) {
+        const link = `${window.location.origin}/invite/${data.token}`;
+        setNewInviteLink(link);
+        setInviteEmail("");
+        await loadMembers();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSendingInvite(false);
+    }
+  }, [inviteEmail, loadMembers]);
+
+  const handleRevokeInvite = useCallback(async (token: string) => {
+    setRevokingToken(token);
+    try {
+      await fetch(`/api/workspace/invites/${token}`, { method: "DELETE" });
+      if (newInviteLink?.includes(token)) setNewInviteLink(null);
+      await loadMembers();
+    } finally {
+      setRevokingToken(null);
+    }
+  }, [newInviteLink, loadMembers]);
+
+  const handleCopyLink = useCallback(() => {
+    if (!newInviteLink) return;
+    void navigator.clipboard.writeText(newInviteLink);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  }, [newInviteLink]);
 
   const handleSaveWorkspace = useCallback(async () => {
     if (!workspaceName.trim() || workspaceName === originalName) return;
@@ -110,6 +215,171 @@ export default function SettingsPage() {
             <p className="text-xs text-foreground-3">This name appears in the sidebar header and dashboard overview.</p>
           </div>
         </div>
+      </section>
+
+      {/* Team Members */}
+      <section className="panel overflow-hidden rounded-[2.2rem]">
+        <div className="border-b border-border px-7 py-8 lg:px-8">
+          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+            <Users className="h-3.5 w-3.5" />
+            Team
+          </p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-foreground">Members</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-foreground-2">
+            Invite teammates by email to collaborate on specs. Invited members join as editors and can create and review suggestions.
+          </p>
+        </div>
+
+        {/* Current members */}
+        <div className="border-b border-border">
+          {loadingMembers ? (
+            <div className="flex items-center gap-3 px-7 py-6 lg:px-8">
+              <Loader2 className="h-4 w-4 animate-spin text-foreground-3" />
+              <span className="text-sm text-foreground-2">Loading members...</span>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {members.map((member) => (
+                <div key={member.user_id} className="flex items-center justify-between gap-4 px-7 py-5 lg:px-8">
+                  <div className="flex items-center gap-3">
+                    {member.imageUrl ? (
+                      <Image
+                        src={member.imageUrl}
+                        alt={member.name}
+                        width={36}
+                        height={36}
+                        className="rounded-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-sm font-bold uppercase text-indigo-500">
+                        {member.name.slice(0, 1)}
+                      </span>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        {member.name}
+                        {member.user_id === user?.id && (
+                          <span className="ml-2 text-xs font-normal text-foreground-3">(you)</span>
+                        )}
+                      </p>
+                      {member.email && (
+                        <p className="text-xs text-foreground-3">{member.email}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge variant={member.role === "owner" ? "outline" : "default"}>
+                      {member.role}
+                    </Badge>
+                    {isOwner && member.user_id !== user?.id && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMember(member.user_id)}
+                        disabled={removingMember === member.user_id}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-foreground-3 transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50"
+                        aria-label="Remove member"
+                      >
+                        {removingMember === member.user_id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Invite form - owner only */}
+        {isOwner && (
+          <div className="px-7 py-7 lg:px-8">
+            <p className="mb-4 text-sm font-semibold text-foreground">Invite by email</p>
+            <div className="flex max-w-lg gap-3">
+              <Input
+                type="email"
+                placeholder="teammate@company.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendInvite()}
+                className="flex-1"
+              />
+              <Button
+                size="md"
+                onClick={handleSendInvite}
+                loading={sendingInvite}
+                disabled={!inviteEmail.trim()}
+                className="shrink-0 gap-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                Generate link
+              </Button>
+            </div>
+
+            {/* Generated link */}
+            {newInviteLink && (
+              <div className="mt-4 max-w-lg rounded-[1.3rem] border border-indigo-500/20 bg-indigo-500/5 p-4">
+                <p className="mb-2 text-xs font-semibold text-indigo-500">Invite link generated - share this</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 truncate rounded-lg bg-surface px-3 py-2 text-xs text-foreground">
+                    {newInviteLink}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-indigo-500 transition-colors hover:bg-indigo-500/10"
+                  >
+                    {copiedLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-foreground-3">Valid for 7 days. Anyone with this link can join the workspace.</p>
+              </div>
+            )}
+
+            {/* Pending invites */}
+            {pendingInvites.length > 0 && (
+              <div className="mt-6">
+                <p className="mb-3 text-sm font-semibold text-foreground">Pending invites</p>
+                <div className="max-w-lg space-y-2">
+                  {pendingInvites.map((invite) => (
+                    <div
+                      key={invite.id}
+                      className="flex items-center justify-between gap-3 rounded-[1.3rem] border border-border bg-surface-2/60 px-4 py-3"
+                    >
+                      <div>
+                        <p className="text-sm text-foreground">{invite.email}</p>
+                        <p className="text-xs text-foreground-3">
+                          Expires {new Date(invite.expires_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRevokeInvite(invite.token)}
+                        disabled={revokingToken === invite.token}
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-foreground-3 transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50"
+                      >
+                        {revokingToken === invite.token ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <X className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isOwner && (
+          <div className="px-7 py-6 lg:px-8">
+            <p className="text-sm text-foreground-3">Only the workspace owner can invite new members.</p>
+          </div>
+        )}
       </section>
 
       {/* Appearance */}
