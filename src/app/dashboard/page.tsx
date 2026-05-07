@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
+import { UserChip } from "@/components/UserChip";
 import { formatRelativeTime } from "@/lib/utils";
 
 interface Doc {
@@ -34,9 +35,6 @@ interface Workspace {
   name: string;
 }
 
-function ownerLabel(ownerId: string) {
-  return `@${ownerId.slice(0, 8)}`;
-}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -260,8 +258,10 @@ export default function DashboardPage() {
                             <Badge variant="outline">v{doc.current_version_number}</Badge>
                             {doc.open_suggestions > 0 && <Badge variant="warning">{doc.open_suggestions} open</Badge>}
                           </div>
-                          <p className="mt-1.5 text-sm text-foreground-2">
-                            Maintained by {ownerLabel(doc.created_by)} · updated {formatRelativeTime(doc.updated_at)}
+                          <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm text-foreground-2">
+                            <span>Maintained by</span>
+                            <UserChip userId={doc.created_by} showYou />
+                            <span>· updated {formatRelativeTime(doc.updated_at)}</span>
                           </p>
                         </div>
                       </div>

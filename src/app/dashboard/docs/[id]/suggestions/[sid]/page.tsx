@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { DiffView, jsonToText } from "@/components/diff/DiffView";
+import { UserChip } from "@/components/UserChip";
 import { formatRelativeTime } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
 
@@ -47,9 +48,6 @@ interface Comment {
   created_at: string;
 }
 
-function authorLabel(value: string) {
-  return `@${value.slice(0, 8)}`;
-}
 
 export default function SuggestionPage() {
   const params = useParams();
@@ -192,15 +190,17 @@ export default function SuggestionPage() {
 
               <h1 className="mt-5 truncate text-3xl font-semibold tracking-[-0.05em] text-foreground">{suggestion.title}</h1>
               {suggestion.description && <p className="mt-3 max-w-3xl text-sm leading-7 text-foreground-2">{suggestion.description}</p>}
-              <p className="mt-3 text-xs text-foreground-3">
-                {authorLabel(suggestion.created_by)} opened this suggestion {formatRelativeTime(suggestion.created_at)}
+              <p className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-foreground-3">
+                <UserChip userId={suggestion.created_by} showYou />
+                <span>opened this suggestion {formatRelativeTime(suggestion.created_at)}</span>
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
               {isOpen ? (
                 <>
-                  {myReview?.decision !== "approved" && (
+                  {/* Authors cannot approve their own suggestions */}
+                  {user?.id !== suggestion.created_by && myReview?.decision !== "approved" && (
                     <Button size="md" onClick={() => handleReview("approved")} loading={submittingReview} className="gap-2">
                       <Check className="h-4 w-4" />
                       Approve
@@ -270,9 +270,7 @@ export default function SuggestionPage() {
                 comments.map((item) => (
                   <div key={item.id} className="rounded-[1.4rem] border border-border bg-surface-2/65 p-5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-foreground">
-                        {item.author_id === user?.id ? "You" : authorLabel(item.author_id)}
-                      </span>
+                      <UserChip userId={item.author_id} showYou />
                       <span className="text-xs text-foreground-3">{formatRelativeTime(item.created_at)}</span>
                     </div>
                     <p className="mt-2.5 text-sm leading-7 text-foreground-2">{item.body}</p>
@@ -320,7 +318,11 @@ export default function SuggestionPage() {
                     </div>
                   )}
 
-                  {myReview?.decision === "approved" ? (
+                  {user?.id === suggestion.created_by ? (
+                    <p className="text-sm leading-7 text-foreground-2">
+                      You opened this suggestion. Another team member needs to approve it before it can merge.
+                    </p>
+                  ) : myReview?.decision === "approved" ? (
                     <div className="rounded-[1.3rem] border border-green-500/20 bg-green-500/10 px-5 py-4 text-sm leading-7 text-green-600 dark:text-green-400">
                       You approved this suggestion.
                     </div>
@@ -376,9 +378,7 @@ export default function SuggestionPage() {
                 reviews.map((review) => (
                   <div key={review.id} className="px-6 py-5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-foreground">
-                        {review.reviewer_id === user?.id ? "You" : authorLabel(review.reviewer_id)}
-                      </span>
+                      <UserChip userId={review.reviewer_id} showYou />
                       <Badge variant={review.decision === "approved" ? "success" : "danger"}>{review.decision}</Badge>
                     </div>
                     {review.comment && <p className="mt-2 text-sm leading-6 text-foreground-2">{review.comment}</p>}
