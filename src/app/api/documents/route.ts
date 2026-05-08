@@ -12,14 +12,16 @@ export async function GET(req: Request) {
 
   const q = searchParams.get("q")?.trim() ?? "";
 
+  const showArchived = searchParams.get("archived") === "true";
+
   let query = db!
     .from("documents")
-    .select("id, title, current_version_number, created_by, created_at, updated_at")
+    .select("id, title, current_version_number, created_by, created_at, updated_at, archived")
     .eq("workspace_id", workspaceId)
+    .eq("archived", showArchived)
     .order("updated_at", { ascending: false });
 
   if (q) {
-    // Search title and content_text with case-insensitive substring match
     query = query.or(`title.ilike.%${q}%,content_text.ilike.%${q}%`);
   }
 

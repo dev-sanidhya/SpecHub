@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Archive,
   ArrowRight,
   Clock3,
   FileText,
@@ -39,6 +40,7 @@ interface Workspace {
 export default function DashboardPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export default function DashboardPage() {
       setWorkspace(ws);
       workspaceRef.current = ws;
 
-      const docsRes = await fetch(`/api/documents?workspace_id=${ws.id}`);
+      const docsRes = await fetch(`/api/documents?workspace_id=${ws.id}&archived=${showArchived}`);
       setDocs(await docsRes.json());
     } catch (error) {
       console.error(error);
@@ -76,11 +78,10 @@ export default function DashboardPage() {
     if (!workspaceRef.current) return;
     if (searchTimer.current) clearTimeout(searchTimer.current);
     if (!search.trim()) {
-      // Empty search - refetch all docs without query param
       searchTimer.current = setTimeout(async () => {
         setSearching(true);
         try {
-          const res = await fetch(`/api/documents?workspace_id=${workspaceRef.current!.id}`);
+          const res = await fetch(`/api/documents?workspace_id=${workspaceRef.current!.id}&archived=${showArchived}`);
           setDocs(await res.json());
         } catch (e) { console.error(e); }
         finally { setSearching(false); }
@@ -91,7 +92,7 @@ export default function DashboardPage() {
       setSearching(true);
       try {
         const res = await fetch(
-          `/api/documents?workspace_id=${workspaceRef.current!.id}&q=${encodeURIComponent(search.trim())}`
+          `/api/documents?workspace_id=${workspaceRef.current!.id}&archived=${showArchived}&q=${encodeURIComponent(search.trim())}`
         );
         setDocs(await res.json());
       } catch (e) { console.error(e); }
@@ -101,7 +102,7 @@ export default function DashboardPage() {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, showArchived]);
 
   async function createDoc() {
     if (!workspace) return;
@@ -223,19 +224,33 @@ export default function DashboardPage() {
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-foreground">Repository index</h2>
             </div>
 
-            <div className="relative w-full lg:max-w-sm">
-              {searching ? (
-                <Loader2 className="absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 animate-spin text-foreground-3" />
-              ) : (
-                <Search className="absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-foreground-3" />
-              )}
-              <Input
-                type="text"
-                placeholder="Search titles and content..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="pl-11"
-              />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowArchived((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${
+                  showArchived
+                    ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-500"
+                    : "border-border text-foreground-3 hover:text-foreground"
+                }`}
+              >
+                <Archive className="h-3.5 w-3.5" />
+                {showArchived ? "Active" : "Archived"}
+              </button>
+              <div className="relative w-full lg:w-72">
+                {searching ? (
+                  <Loader2 className="absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 animate-spin text-foreground-3" />
+                ) : (
+                  <Search className="absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-foreground-3" />
+                )}
+                <Input
+                  type="text"
+                  placeholder="Search titles and content..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="pl-11"
+                />
+              </div>
             </div>
           </div>
         </div>

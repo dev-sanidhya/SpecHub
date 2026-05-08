@@ -46,18 +46,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return ok({ ...docRow, currentVersion });
 }
 
-// PATCH /api/documents/:id - update title
+// PATCH /api/documents/:id - update title and/or archived state
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { response, db } = await loadOwnedDocument(id);
   if (response) return response;
 
   const body = await req.json();
-  const { title } = body;
+  const updates: Record<string, unknown> = {};
+  if (typeof body.title === "string") updates.title = body.title;
+  if (typeof body.archived === "boolean") updates.archived = body.archived;
+
+  if (Object.keys(updates).length === 0) return err("Nothing to update", 400);
 
   const { data, error: dbErr } = await db!
     .from("documents")
-    .update({ title })
+    .update(updates)
     .eq("id", id)
     .select()
     .single();
