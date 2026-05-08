@@ -7,8 +7,10 @@ import {
   AlertCircle,
   Check,
   ChevronLeft,
+  Copy,
   GitMerge,
   GitPullRequest,
+  Link2,
   Loader2,
   MessageSquare,
   Sparkles,
@@ -65,6 +67,9 @@ export default function SuggestionPage() {
   const [merging, setMerging] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [generatingShare, setGeneratingShare] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const load = useCallback(async () => {
     const [s, r, c] = await Promise.all([
@@ -141,6 +146,23 @@ export default function SuggestionPage() {
     await load();
   }, [sid, load]);
 
+  const handleGenerateShare = useCallback(async () => {
+    setGeneratingShare(true);
+    try {
+      const res = await fetch(`/api/suggestions/${sid}/share`, { method: "POST" });
+      const data = await res.json();
+      const url = `${window.location.origin}/share/${data.token}`;
+      setShareLink(url);
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      // silent
+    } finally {
+      setGeneratingShare(false);
+    }
+  }, [sid]);
+
   const handleComment = useCallback(async () => {
     if (!comment.trim()) return;
     setSubmittingComment(true);
@@ -197,9 +219,24 @@ export default function SuggestionPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+              {/* Share link button - always visible */}
+              {shareLink ? (
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText(shareLink); setShareCopied(true); setTimeout(() => setShareCopied(false), 2500); }}
+                  className="flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-3.5 py-2 text-xs font-semibold text-green-600 transition-colors hover:bg-green-500/15 dark:text-green-400"
+                >
+                  {shareCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  {shareCopied ? "Copied!" : "Copy share link"}
+                </button>
+              ) : (
+                <Button variant="ghost" size="md" onClick={handleGenerateShare} loading={generatingShare} className="gap-2">
+                  <Link2 className="h-4 w-4" />
+                  Share
+                </Button>
+              )}
               {isOpen ? (
                 <>
-                  {/* Authors cannot approve their own suggestions */}
                   {user?.id !== suggestion.created_by && myReview?.decision !== "approved" && (
                     <Button size="md" onClick={() => handleReview("approved")} loading={submittingReview} className="gap-2">
                       <Check className="h-4 w-4" />

@@ -5,14 +5,16 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   AlertTriangle,
+  Archive,
   ChevronLeft,
   Clock,
   Download,
-  FileWarning,
   Eye,
   GitBranchPlus,
+  GitCompareArrows,
   GitPullRequest,
   History,
+  Lock,
   Loader2,
   PenLine,
   Save,
@@ -97,10 +99,18 @@ export default function DocPage() {
   const [suggestDesc, setSuggestDesc] = useState("");
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [showLockWarning, setShowLockWarning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuggestForm, setShowSuggestForm] = useState(false);
   const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
   const [deleting, setDeleting] = useState(false);
+  // Version comparison
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareA, setCompareA] = useState<Version | null>(null);
+  const [compareB, setCompareB] = useState<Version | null>(null);
+  const [compareAContent, setCompareAContent] = useState<object | null>(null);
+  const [compareBContent, setCompareBContent] = useState<object | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<Version | null>(null);
   const [selectedVersionContent, setSelectedVersionContent] = useState<object | null>(null);
@@ -206,6 +216,26 @@ export default function DocPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentContent, title]);
 
+  // Will be wired after handleSaveNew/handleSaveVersion are declared (see cmdSaveRef below)
+  const cmdSaveRef = useRef<() => void>(() => {});
+
+  // Load content for version comparison
+  useEffect(() => {
+    if (!compareA || !docId) return;
+    fetch(`/api/documents/${docId}/versions/${compareA.id}`)
+      .then((r) => r.json())
+      .then((v) => setCompareAContent(v.content ?? null))
+      .catch(() => setCompareAContent(null));
+  }, [compareA, docId]);
+
+  useEffect(() => {
+    if (!compareB || !docId) return;
+    fetch(`/api/documents/${docId}/versions/${compareB.id}`)
+      .then((r) => r.json())
+      .then((v) => setCompareBContent(v.content ?? null))
+      .catch(() => setCompareBContent(null));
+  }, [compareB, docId]);
+
   function restoreDraft() {
     try {
       const raw = localStorage.getItem(draftKey);
@@ -298,6 +328,33 @@ export default function DocPage() {
     }
   }, [doc, docId, currentContent]);
 
+  // Cmd+S / Ctrl+S - wired here so handleSaveNew/handleSaveVersion are in scope
+  useEffect(() => {
+    cmdSaveRef.current = () => {
+      const openCount = suggestions.filter((s) => s.status === "open").length;
+      if (isNew) {
+        handleSaveNew();
+      } else if (doc) {
+        if (openCount > 0) {
+          setShowLockWarning(true);
+        } else {
+          handleSaveVersion();
+        }
+      }
+    };
+  });
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        cmdSaveRef.current();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
   const handleTitleBlur = useCallback(async () => {
     if (!doc || title === doc.title) return;
     await fetch(`/api/documents/${docId}`, {
@@ -373,6 +430,22 @@ export default function DocPage() {
       setExporting(false);
     }
   }, [doc, docId]);
+
+  const handleArchive = useCallback(async () => {
+    if (!doc) return;
+    setArchiving(true);
+    try {
+      await fetch(`/api/documents/${docId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: true }),
+      });
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setArchiving(false);
+    }
+  }, [doc, docId, router]);
 
   const currentText = jsonToText(currentContent);
   const suggestText = jsonToText(suggestContent);
@@ -525,10 +598,26 @@ export default function DocPage() {
                       <Download className="h-4 w-4" />
                       Export
                     </Button>
-                    <Button variant="secondary" size="md" onClick={handleSaveVersion} loading={saving} className="gap-2">
-                      <Save className="h-4 w-4" />
-                      Save version
-                    </Button>
+                    {openSuggestions > 0 && !showLockWarning ? (
+                      <Button variant="secondary" size="md" onClick={() => setShowLockWarning(true)} className="gap-2">
+                        <Lock className="h-4 w-4" />
+                        Save version
+                      </Button>
+                    ) : showLockWarning ? (
+                      <div className="flex items-center gap-2 rounded-[1.4rem] border border-amber-500/30 bg-amber-500/8 px-4 py-2">
+                        <p className="text-xs text-amber-700 dark:text-amber-400">Save anyway? Open reviews will see a stale diff.</p>
+                        <button type="button" onClick={() => setShowLockWarning(false)} className="text-xs text-foreground-3 hover:text-foreground">Cancel</button>
+                        <Button size="sm" onClick={() => { setShowLockWarning(false); handleSaveVersion(); }} loading={saving} className="gap-1.5">
+                          <Save className="h-3.5 w-3.5" />
+                          Save
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button variant="secondary" size="md" onClick={handleSaveVersion} loading={saving} className="gap-2">
+                        <Save className="h-4 w-4" />
+                        Save version
+                      </Button>
+                    )}
                   </>
                 )}
                 {mode === "suggest" && !showSuggestForm && (
@@ -582,65 +671,142 @@ export default function DocPage() {
       {mode === "history" ? (
         <section className="grid gap-6 xl:grid-cols-[320px_1fr]">
           <aside className="panel overflow-hidden rounded-[2rem]">
-            <div className="border-b border-border px-6 py-5">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-6 py-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Version timeline</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setCompareMode((v) => !v);
+                  setCompareA(null);
+                  setCompareB(null);
+                  setCompareAContent(null);
+                  setCompareBContent(null);
+                }}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                  compareMode
+                    ? "bg-indigo-500/15 text-indigo-500"
+                    : "border border-border text-foreground-3 hover:text-foreground"
+                }`}
+              >
+                <GitCompareArrows className="h-3.5 w-3.5" />
+                Compare
+              </button>
             </div>
+            {compareMode && (
+              <div className="border-b border-border bg-indigo-500/5 px-5 py-3">
+                <p className="text-[11px] text-foreground-2">
+                  {!compareA ? "Click a version to set the base" : !compareB ? "Now click the target version" : (
+                    <span className="font-medium text-foreground">Comparing v{compareA.version_number} → v{compareB.version_number}</span>
+                  )}
+                </p>
+              </div>
+            )}
             <div className="space-y-2.5 p-4">
               {versions.length === 0 && <p className="px-2 py-2 text-xs text-foreground-3">No versions yet.</p>}
-              {versions.map((version) => (
-                <button
-                  key={version.id}
-                  onClick={() => setSelectedVersion(version)}
-                  className={`w-full rounded-[1.35rem] border px-4 py-4 text-left transition-all ${
-                    selectedVersion?.id === version.id
-                      ? "border-indigo-500/25 bg-indigo-500/10"
-                      : "border-border bg-surface-2/60 hover:bg-surface-2"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-foreground">v{version.version_number}</span>
-                    {version.id === versions[0]?.id && <Badge variant="success">Current</Badge>}
-                  </div>
-                  <p className="mt-2.5 flex items-center gap-1.5 text-xs text-foreground-3">
-                    <Clock className="h-3.5 w-3.5" />
-                    {formatRelativeTime(version.created_at)}
-                  </p>
-                  <p className="mt-1.5 flex items-center gap-1 text-xs text-foreground-3">
-                    <span>Saved by</span>
-                    <UserChip userId={version.created_by} showYou />
-                  </p>
-                  {version.ai_summary && (
-                    <p className="mt-3 flex items-start gap-2 text-xs leading-6 text-foreground-2">
-                      <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500" />
-                      {version.ai_summary}
+              {versions.map((version) => {
+                const isA = compareA?.id === version.id;
+                const isB = compareB?.id === version.id;
+                const handleVersionClick = () => {
+                  if (!compareMode) {
+                    setSelectedVersion(version);
+                  } else {
+                    if (!compareA) { setCompareA(version); }
+                    else if (!compareB && version.id !== compareA.id) { setCompareB(version); }
+                    else { setCompareA(version); setCompareB(null); setCompareBContent(null); }
+                  }
+                };
+                return (
+                  <button
+                    key={version.id}
+                    onClick={handleVersionClick}
+                    className={`w-full rounded-[1.35rem] border px-4 py-4 text-left transition-all ${
+                      isA ? "border-indigo-500/40 bg-indigo-500/12 ring-1 ring-indigo-500/20"
+                      : isB ? "border-green-500/40 bg-green-500/10 ring-1 ring-green-500/20"
+                      : selectedVersion?.id === version.id && !compareMode
+                        ? "border-indigo-500/25 bg-indigo-500/10"
+                        : "border-border bg-surface-2/60 hover:bg-surface-2"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold text-foreground">v{version.version_number}</span>
+                      <div className="flex items-center gap-1.5">
+                        {isA && <span className="rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-bold text-indigo-500">BASE</span>}
+                        {isB && <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-600 dark:text-green-400">TARGET</span>}
+                        {version.id === versions[0]?.id && !isA && !isB && <Badge variant="success">Current</Badge>}
+                      </div>
+                    </div>
+                    <p className="mt-2.5 flex items-center gap-1.5 text-xs text-foreground-3">
+                      <Clock className="h-3.5 w-3.5" />
+                      {formatRelativeTime(version.created_at)}
                     </p>
-                  )}
-                </button>
-              ))}
+                    <p className="mt-1.5 flex items-center gap-1 text-xs text-foreground-3">
+                      <span>Saved by</span>
+                      <UserChip userId={version.created_by} showYou />
+                    </p>
+                    {version.ai_summary && (
+                      <p className="mt-3 flex items-start gap-2 text-xs leading-6 text-foreground-2">
+                        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500" />
+                        {version.ai_summary}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </aside>
 
           <div className="space-y-6">
-            {selectedVersion?.ai_summary && (
-              <div className="panel-soft rounded-[1.8rem] px-6 py-5">
-                <p className="flex items-start gap-3 text-sm leading-7 text-foreground-2">
-                  <Sparkles className="mt-1 h-4 w-4 shrink-0 text-indigo-500" />
-                  <span>
-                    <span className="font-semibold text-foreground">AI changelog:</span> {selectedVersion.ai_summary}
-                  </span>
-                </p>
-              </div>
-            )}
-
-            <div className="panel rounded-[2rem] p-3 lg:p-4">
-              {selectedVersionContent ? (
-                <DocEditor content={selectedVersionContent} editable={false} />
-              ) : (
-                <div className="flex h-[calc(100vh-22rem)] items-center justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin text-border-3" />
+            {compareMode && compareA && compareB ? (
+              <div className="panel overflow-hidden rounded-[2rem]">
+                <div className="border-b border-border px-6 py-5">
+                  <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                    <GitCompareArrows className="h-3.5 w-3.5" />
+                    v{compareA.version_number} → v{compareB.version_number}
+                  </p>
+                  <p className="mt-1.5 text-sm text-foreground-2">
+                    Showing what changed between these two snapshots.
+                  </p>
                 </div>
-              )}
-            </div>
+                {compareAContent && compareBContent ? (
+                  <DiffView oldText={jsonToText(compareAContent)} newText={jsonToText(compareBContent)} />
+                ) : (
+                  <div className="flex h-40 items-center justify-center">
+                    <Loader2 className="h-5 w-5 animate-spin text-foreground-3" />
+                  </div>
+                )}
+              </div>
+            ) : compareMode ? (
+              <div className="panel rounded-[2rem] flex h-48 items-center justify-center">
+                <div className="text-center">
+                  <GitCompareArrows className="mx-auto h-8 w-8 text-foreground-3" />
+                  <p className="mt-3 text-sm text-foreground-2">
+                    {!compareA ? "Select a base version on the left" : "Now select a target version"}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {selectedVersion?.ai_summary && (
+                  <div className="panel-soft rounded-[1.8rem] px-6 py-5">
+                    <p className="flex items-start gap-3 text-sm leading-7 text-foreground-2">
+                      <Sparkles className="mt-1 h-4 w-4 shrink-0 text-indigo-500" />
+                      <span>
+                        <span className="font-semibold text-foreground">AI changelog:</span> {selectedVersion.ai_summary}
+                      </span>
+                    </p>
+                  </div>
+                )}
+                <div className="panel rounded-[2rem] p-3 lg:p-4">
+                  {selectedVersionContent ? (
+                    <DocEditor content={selectedVersionContent} editable={false} />
+                  ) : (
+                    <div className="flex h-[calc(100vh-22rem)] items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin text-border-3" />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </section>
       ) : (
@@ -860,32 +1026,42 @@ export default function DocPage() {
             {mode === "read" && doc && (
               <div className="panel overflow-hidden rounded-[2rem]">
                 <div className="border-b border-border px-6 py-5">
-                  <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-red-500">
-                    <FileWarning className="h-3.5 w-3.5" />
-                    Danger zone
+                  <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground-3">
+                    <Archive className="h-3.5 w-3.5" />
+                    Document management
                   </p>
                 </div>
 
                 <div className="space-y-4 p-6">
-                  <p className="text-sm leading-7 text-foreground-2">
-                    Only the document owner can remove this PRD. Deleting it will also remove its versions, suggestions, reviews,
-                    and comments.
-                  </p>
-
-                  <div className="rounded-[1.3rem] border border-red-500/20 bg-red-500/8 p-4">
-                    <p className="text-sm font-medium text-foreground">Delete document</p>
+                  <div className="rounded-[1.3rem] border border-border bg-surface-2/60 p-4">
+                    <p className="text-sm font-medium text-foreground">Archive document</p>
                     <p className="mt-2 text-sm leading-7 text-foreground-2">
-                      Type <span className="font-semibold text-foreground">{doc.title}</span> to confirm permanent deletion.
+                      Removes it from the main list. History and suggestions are preserved and it can be accessed from the archived filter.
                     </p>
                   </div>
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    className="w-full gap-2"
+                    onClick={handleArchive}
+                    loading={archiving}
+                  >
+                    <Archive className="h-4 w-4" />
+                    Archive document
+                  </Button>
 
+                  <div className="mt-2 rounded-[1.3rem] border border-red-500/20 bg-red-500/6 p-4">
+                    <p className="text-sm font-medium text-foreground">Permanent deletion</p>
+                    <p className="mt-2 text-sm leading-7 text-foreground-2">
+                      Type <span className="font-semibold text-foreground">{doc.title}</span> to permanently delete all versions, suggestions, and comments.
+                    </p>
+                  </div>
                   <Input
                     type="text"
                     placeholder="Type the document title to confirm"
                     value={deleteConfirmTitle}
                     onChange={(e) => setDeleteConfirmTitle(e.target.value)}
                   />
-
                   <Button
                     variant="danger"
                     size="md"
@@ -894,8 +1070,7 @@ export default function DocPage() {
                     loading={deleting}
                     disabled={deleteConfirmTitle.trim() !== doc.title}
                   >
-                    <FileWarning className="h-4 w-4" />
-                    Delete document
+                    Delete permanently
                   </Button>
                 </div>
               </div>
