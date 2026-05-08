@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   ChevronLeft,
   Clock,
+  Download,
   FileWarning,
   Eye,
   GitBranchPlus,
@@ -95,6 +96,7 @@ export default function DocPage() {
   const [suggestTitle, setSuggestTitle] = useState("");
   const [suggestDesc, setSuggestDesc] = useState("");
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuggestForm, setShowSuggestForm] = useState(false);
   const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
@@ -349,6 +351,29 @@ export default function DocPage() {
     }
   }, [deleteConfirmTitle, doc, docId, router]);
 
+  const handleExport = useCallback(async () => {
+    if (!doc) return;
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/documents/${docId}/export`);
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match ? match[1] : `${docId}.md`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silent fail
+    } finally {
+      setExporting(false);
+    }
+  }, [doc, docId]);
+
   const currentText = jsonToText(currentContent);
   const suggestText = jsonToText(suggestContent);
 
@@ -495,10 +520,16 @@ export default function DocPage() {
             <div className="flex flex-col gap-3 xl:items-end xl:shrink-0">
               <div className="flex flex-wrap items-center gap-2">
                 {mode === "read" && (
-                  <Button variant="secondary" size="md" onClick={handleSaveVersion} loading={saving} className="gap-2">
-                    <Save className="h-4 w-4" />
-                    Save version
-                  </Button>
+                  <>
+                    <Button variant="ghost" size="md" onClick={handleExport} loading={exporting} disabled={!doc?.current_version_id} className="gap-2">
+                      <Download className="h-4 w-4" />
+                      Export
+                    </Button>
+                    <Button variant="secondary" size="md" onClick={handleSaveVersion} loading={saving} className="gap-2">
+                      <Save className="h-4 w-4" />
+                      Save version
+                    </Button>
+                  </>
                 )}
                 {mode === "suggest" && !showSuggestForm && (
                   <Button size="md" onClick={() => setShowSuggestForm(true)} className="gap-2">
