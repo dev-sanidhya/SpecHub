@@ -4,7 +4,7 @@
 GitHub for PRDs. Propose, review, and approve changes to product requirement documents using a PR-style workflow. Full version history, AI-written changelogs, contradiction detection, and shareable diff links.
 
 ## Current Status
-**Phase 6 (partial) - Templates, Search, Tables COMPLETE**
+**Phase 7 (partial) - Markdown Export + Activity Feed COMPLETE**
 
 - Phase 1 complete: all screens built with Tiptap editor, diff view, suggestion/review flows
 - Phase 2 complete: all API routes live, Supabase queries replacing demo data everywhere
@@ -13,6 +13,7 @@ GitHub for PRDs. Propose, review, and approve changes to product requirement doc
 - Phase 4b complete: real user identity, on-demand AI checks, self-approval blocked, draft autosave
 - Phase 5 complete: invite system, member management, notification bell, workspace membership for non-owners
 - Phase 6 (partial) complete: document templates (6 built-in), full-text content search, tables, slash command menu (/), fixed member docs visibility
+- Phase 7 (partial) complete: Markdown export (Export button on doc page, GET /api/documents/[id]/export), workspace activity feed (/dashboard/activity, GET /api/activity)
 - ANTHROPIC_API_KEY still needs to be swapped in `.env.local` (placeholder set)
 - **Run Phase 5 SQL additions** in Supabase dashboard (bottom of supabase-schema.sql)
 - Build passes clean - ready for local testing via `npm run dev`
