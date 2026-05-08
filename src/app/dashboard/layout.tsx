@@ -3,9 +3,11 @@
 import { SignOutButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Activity, ArrowUpRight, FilePlus2, LayoutDashboard, LogOut, Orbit, Plus, Settings, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
+import { CommandPalette } from "@/components/CommandPalette";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +31,11 @@ function getHeaderContext(pathname: string) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { label, title } = getHeaderContext(pathname);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/workspace").then((r) => r.json()).then((ws) => setWorkspaceId(ws?.id ?? null)).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -130,6 +137,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
+                  className="hidden items-center gap-2 rounded-full border border-border bg-surface-2/80 px-3.5 py-2 text-xs text-foreground-3 transition-colors hover:bg-surface-2 hover:text-foreground lg:flex"
+                >
+                  <span>Search or jump to...</span>
+                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium">⌘K</kbd>
+                </button>
                 <NotificationBell />
               </div>
 
@@ -155,6 +170,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <main className="min-w-0 flex-1 pt-5">{children}</main>
         </div>
       </div>
+
+      <CommandPalette workspaceId={workspaceId} />
     </div>
   );
 }
