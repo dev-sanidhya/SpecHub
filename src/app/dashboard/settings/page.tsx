@@ -70,6 +70,9 @@ export default function SettingsPage() {
   const [slackSaved, setSlackSaved] = useState(false);
   const [savingSlack, setSavingSlack] = useState(false);
 
+  // Audit log
+  const [exportingAudit, setExportingAudit] = useState(false);
+
   useEffect(() => {
     fetch("/api/workspace")
       .then((r) => r.json())
@@ -516,6 +519,48 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
+
+      {/* Audit Log */}
+      {isOwner && (
+        <section className="panel overflow-hidden rounded-[2.2rem]">
+          <div className="border-b border-border px-7 py-8 lg:px-8">
+            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+              <Globe2 className="h-3.5 w-3.5" />
+              Audit log
+            </p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-foreground">Workspace activity export</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-foreground-2">
+              Export a complete log of all workspace events - suggestions, reviews, merges, comments, and member joins. Available to workspace owners only.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 px-7 py-7 lg:px-8">
+            <Button
+              variant="secondary"
+              size="md"
+              loading={exportingAudit}
+              className="gap-2"
+              onClick={async () => {
+                setExportingAudit(true);
+                try {
+                  const res = await fetch("/api/workspace/audit?format=csv");
+                  if (!res.ok) return;
+                  const blob = await res.blob();
+                  const disposition = res.headers.get("Content-Disposition") ?? "";
+                  const match = disposition.match(/filename="([^"]+)"/);
+                  const filename = match ? match[1] : "audit.csv";
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = filename; a.click();
+                  URL.revokeObjectURL(url);
+                } finally { setExportingAudit(false); }
+              }}
+            >
+              <Copy className="h-4 w-4" />
+              Export as CSV
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Account */}
       <section className="panel overflow-hidden rounded-[2.2rem]">
