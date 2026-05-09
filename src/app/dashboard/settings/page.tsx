@@ -73,6 +73,10 @@ export default function SettingsPage() {
   // Audit log
   const [exportingAudit, setExportingAudit] = useState(false);
 
+  // Email digest
+  const [sendingDigest, setSendingDigest] = useState(false);
+  const [digestResult, setDigestResult] = useState<string | null>(null);
+
   useEffect(() => {
     fetch("/api/workspace")
       .then((r) => r.json())
@@ -533,7 +537,7 @@ export default function SettingsPage() {
               Export a complete log of all workspace events - suggestions, reviews, merges, comments, and member joins. Available to workspace owners only.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3 px-7 py-7 lg:px-8">
+          <div className="flex flex-wrap items-center gap-3 px-7 py-7 lg:px-8">
             <Button
               variant="secondary"
               size="md"
@@ -558,6 +562,26 @@ export default function SettingsPage() {
               <Copy className="h-4 w-4" />
               Export as CSV
             </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              loading={sendingDigest}
+              className="gap-2"
+              onClick={async () => {
+                setSendingDigest(true);
+                setDigestResult(null);
+                try {
+                  const res = await fetch("/api/workspace/digest", { method: "POST" });
+                  const data = await res.json() as { sent?: number; total?: number; note?: string };
+                  setDigestResult(data.note ?? `Sent to ${data.sent ?? 0} of ${data.total ?? 0} members.`);
+                } catch { setDigestResult("Failed to send digest."); }
+                finally { setSendingDigest(false); }
+              }}
+            >
+              <Zap className="h-4 w-4" />
+              Send digest now
+            </Button>
+            {digestResult && <p className="text-xs text-foreground-2">{digestResult}</p>}
           </div>
         </section>
       )}
