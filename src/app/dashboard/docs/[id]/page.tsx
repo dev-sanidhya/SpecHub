@@ -33,6 +33,7 @@ import { formatRelativeTime } from "@/lib/utils";
 import { TEMPLATES, type Template } from "@/lib/templates";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useDocPresence } from "@/hooks/useDocPresence";
+import { useRealtimeSuggestions } from "@/hooks/useRealtimeSuggestions";
 import { TableOfContents } from "@/components/TableOfContents";
 
 type Mode = "read" | "suggest" | "history";
@@ -123,6 +124,8 @@ export default function DocPage() {
   const [loading, setLoading] = useState(!isNew);
   const { activeWorkspace: workspace } = useWorkspace();
   const viewers = useDocPresence(isNew ? null : docId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useRealtimeSuggestions(isNew ? null : docId, setSuggestions as any);
   const [contradictions, setContradictions] = useState<Contradiction[]>([]);
   const [checkingContradictions, setCheckingContradictions] = useState(false);
   const contradictionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
