@@ -2,13 +2,17 @@
 
 import { SignOutButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Activity, ArrowUpRight, FilePlus2, LayoutDashboard, LogOut, Orbit, Plus, Settings, Sparkles } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  Activity, ArrowUpRight, Check, ChevronDown, FilePlus2,
+  LayoutDashboard, LogOut, Orbit, Plus, Settings, Sparkles
+} from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CommandPalette } from "@/components/CommandPalette";
 import { Button } from "@/components/ui/Button";
+import { WorkspaceProvider, useWorkspace } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -28,14 +32,86 @@ function getHeaderContext(pathname: string) {
   return { label: "Workspace", title: "Product docs that can survive change" };
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function WorkspaceSwitcher() {
+  const router = useRouter();
+  const { workspaces, activeWorkspace, switchWorkspace, createWorkspace } = useWorkspace();
+  const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+
+  const handleCreate = async () => {
+    if (!newName.trim()) return;
+    setCreating(true);
+    const ws = await createWorkspace(newName.trim());
+    setCreating(false);
+    setNewName("");
+    setOpen(false);
+    if (ws) router.push("/dashboard");
+  };
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 rounded-[1.4rem] border border-border bg-surface-2/70 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-2"
+      >
+        <span className="flex items-center gap-2 min-w-0">
+          <Orbit className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
+          <span className="truncate">{activeWorkspace?.name ?? "Workspace"}</span>
+        </span>
+        <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-foreground-3 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-[0_24px_48px_-12px_var(--shadow-color)]">
+            <div className="px-3 pb-2 pt-3">
+              <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Your workspaces</p>
+              {workspaces.map((ws) => (
+                <button
+                  key={ws.id}
+                  type="button"
+                  onClick={() => { switchWorkspace(ws.id); setOpen(false); router.push("/dashboard"); }}
+                  className="flex w-full items-center justify-between gap-3 rounded-[1.1rem] px-3 py-2.5 text-sm transition-colors hover:bg-surface-2"
+                >
+                  <span className="truncate font-medium text-foreground">{ws.name}</span>
+                  {ws.id === activeWorkspace?.id && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-500" />}
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-border px-3 py-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="New workspace name..."
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                  className="flex-1 rounded-[1rem] border border-border bg-surface-2 px-3 py-2 text-xs text-foreground placeholder:text-foreground-3 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  disabled={!newName.trim() || creating}
+                  className="rounded-[1rem] bg-indigo-500 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40 hover:bg-indigo-600"
+                >
+                  {creating ? "..." : <Plus className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { label, title } = getHeaderContext(pathname);
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/workspace").then((r) => r.json()).then((ws) => setWorkspaceId(ws?.id ?? null)).catch(() => {});
-  }, []);
+  const { activeWorkspace } = useWorkspace();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -53,24 +129,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           </div>
 
+          {/* Workspace switcher */}
+          <div className="border-b border-border/60 px-4 py-4">
+            <WorkspaceSwitcher />
+          </div>
+
           <div className="px-5 py-5">
-            <div className="panel-soft rounded-[1.85rem] p-5">
-              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-500">
-                <Orbit className="h-3.5 w-3.5" />
-                Workspace
-              </p>
-              <p className="mt-3 text-xl font-semibold tracking-tight text-foreground">Shipping specs without losing context.</p>
-              <p className="mt-2.5 text-sm leading-7 text-foreground-2">
-                Keep changes, approvals, and AI summaries in one system instead of spread across docs and chat.
-              </p>
-              <Link
-                href="/dashboard/docs/new"
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_22px_46px_-24px_rgba(99,102,241,0.6)] transition-all hover:-translate-y-0.5 hover:bg-indigo-600"
-              >
-                <Plus className="h-4 w-4" />
-                New document
-              </Link>
-            </div>
+            <Link
+              href="/dashboard/docs/new"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_22px_46px_-24px_rgba(99,102,241,0.6)] transition-all hover:-translate-y-0.5 hover:bg-indigo-600"
+            >
+              <Plus className="h-4 w-4" />
+              New document
+            </Link>
           </div>
 
           <nav className="flex-1 px-4 py-2">
@@ -171,7 +242,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
 
-      <CommandPalette workspaceId={workspaceId} />
+      <CommandPalette workspaceId={activeWorkspace?.id ?? null} />
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <WorkspaceProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </WorkspaceProvider>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
   Archive,
   ArrowRight,
@@ -39,10 +40,10 @@ interface Workspace {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { activeWorkspace } = useWorkspace();
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [docs, setDocs] = useState<Doc[]>([]);
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -50,21 +51,19 @@ export default function DashboardPage() {
   const workspaceRef = useRef<Workspace | null>(null);
 
   const loadData = useCallback(async () => {
+    if (!activeWorkspace) return;
     setLoading(true);
+    workspaceRef.current = activeWorkspace;
     try {
-      const wsRes = await fetch("/api/workspace");
-      const ws = await wsRes.json();
-      setWorkspace(ws);
-      workspaceRef.current = ws;
-
-      const docsRes = await fetch(`/api/documents?workspace_id=${ws.id}&archived=${showArchived}`);
+      const docsRes = await fetch(`/api/documents?workspace_id=${activeWorkspace.id}&archived=${showArchived}`);
       setDocs(await docsRes.json());
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWorkspace?.id, showArchived]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -105,13 +104,13 @@ export default function DashboardPage() {
   }, [search, showArchived]);
 
   async function createDoc() {
-    if (!workspace) return;
+    if (!activeWorkspace) return;
     setCreating(true);
     try {
       const res = await fetch("/api/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workspace_id: workspace.id, title: "Untitled" }),
+        body: JSON.stringify({ workspace_id: activeWorkspace.id, title: "Untitled" }),
       });
       const doc = await res.json();
       router.push(`/dashboard/docs/${doc.id}`);
@@ -140,7 +139,7 @@ export default function DashboardPage() {
             <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-2xl">
                 <h2 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">
-                  {workspace?.name ?? "Workspace"} keeps specs reviewable.
+                  {activeWorkspace?.name ?? "Workspace"} keeps specs reviewable.
                 </h2>
                 <p className="mt-4 text-base leading-8 text-foreground-2">
                   Track living product documents as the source of truth, then route edits through explicit review instead of silent rewrites.

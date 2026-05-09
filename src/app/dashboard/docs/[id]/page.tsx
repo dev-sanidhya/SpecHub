@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/Input";
 import { UserChip } from "@/components/UserChip";
 import { formatRelativeTime } from "@/lib/utils";
 import { TEMPLATES, type Template } from "@/lib/templates";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 type Mode = "read" | "suggest" | "history";
 type SuggestionStatus = "open" | "approved" | "rejected" | "merged";
@@ -116,7 +117,7 @@ export default function DocPage() {
   const [selectedVersionContent, setSelectedVersionContent] = useState<object | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(!isNew);
-  const [workspace, setWorkspace] = useState<{ id: string } | null>(null);
+  const { activeWorkspace: workspace } = useWorkspace();
   const [contradictions, setContradictions] = useState<Contradiction[]>([]);
   const [checkingContradictions, setCheckingContradictions] = useState(false);
   const contradictionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -125,9 +126,7 @@ export default function DocPage() {
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftKey = isNew ? "spechub:draft:new" : `spechub:draft:${docId}`;
 
-  useEffect(() => {
-    fetch("/api/workspace").then((r) => r.json()).then(setWorkspace);
-  }, []);
+  // workspace is now provided by WorkspaceContext via useWorkspace()
 
   useEffect(() => {
     if (isNew) return;
