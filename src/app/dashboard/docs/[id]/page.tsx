@@ -33,6 +33,7 @@ import { formatRelativeTime } from "@/lib/utils";
 import { TEMPLATES, type Template } from "@/lib/templates";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useDocPresence } from "@/hooks/useDocPresence";
+import { TableOfContents } from "@/components/TableOfContents";
 
 type Mode = "read" | "suggest" | "history";
 type SuggestionStatus = "open" | "approved" | "rejected" | "merged";
@@ -931,6 +932,12 @@ export default function DocPage() {
           </div>
 
           <aside className="space-y-6">
+            {mode === "read" && (
+              <div className="panel overflow-hidden rounded-[2rem] px-6 py-5">
+                <TableOfContents content={currentContent} />
+              </div>
+            )}
+
             {mode === "read" && (
               <div className="panel overflow-hidden rounded-[2rem]">
                 <div className="border-b border-border px-6 py-5">
