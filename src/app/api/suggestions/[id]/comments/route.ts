@@ -44,20 +44,55 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       .eq("id", id)
       .single();
     const s = suggestion as { created_by: string; title: string; document_id: string } | null;
-    if (s && s.created_by !== userId!) {
+    if (s) {
       const { data: doc } = await db!
         .from("documents")
         .select("workspace_id")
         .eq("id", s.document_id)
         .single();
       const wsId = (doc as { workspace_id: string } | null)?.workspace_id;
-      if (wsId) {
+
+      if (wsId && s.created_by !== userId!) {
         void createNotification(s.created_by, wsId, "comment_posted", {
           suggestion_id: id,
           suggestion_title: s.title,
           doc_id: s.document_id,
           actor_id: userId!,
         });
+      }
+
+      // Notify any @mentioned users (pattern: @user_xxxx or Clerk user IDs embedded as @<id>)
+      if (wsId) {
+        const mentionRegex = /@([\w]+)/g;
+        const mentioned = new Set<string>();
+        let match;
+        while ((match = mentionRegex.exec(body)) !== null) {
+          mentioned.add(match[1]);
+        }
+
+        // Resolve mentions against workspace members
+        if (mentioned.size > 0) {
+          const { data: members } = await db!
+            .from("workspace_members")
+            .select("user_id")
+            .eq("workspace_id", wsId);
+
+          for (const m of members ?? []) {
+            const member = m as { user_id: string };
+            // Match if the mention is a prefix of the userId
+            const isMatch = Array.from(mentioned).some(
+              (mention) => member.user_id.includes(mention) || member.user_id.startsWith(mention)
+            );
+            if (isMatch && member.user_id !== userId! && member.user_id !== s.created_by) {
+              void createNotification(member.user_id, wsId, "comment_posted", {
+                suggestion_id: id,
+                suggestion_title: s.title,
+                doc_id: s.document_id,
+                actor_id: userId!,
+              });
+            }
+          }
+        }
       }
     }
   } catch {

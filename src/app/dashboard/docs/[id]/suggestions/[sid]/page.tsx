@@ -71,6 +71,41 @@ export default function SuggestionPage() {
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [generatingShare, setGeneratingShare] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [members, setMembers] = useState<{ user_id: string; name: string }[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/workspace/members")
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        if (Array.isArray(data)) setMembers(data as { user_id: string; name: string }[]);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setComment(val);
+    const atPos = val.lastIndexOf("@");
+    if (atPos !== -1 && atPos === val.length - 1) {
+      setMentionQuery("");
+    } else if (atPos !== -1 && !val.slice(atPos + 1).includes(" ")) {
+      setMentionQuery(val.slice(atPos + 1));
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const insertMention = (member: { user_id: string; name: string }) => {
+    const atPos = comment.lastIndexOf("@");
+    const before = atPos >= 0 ? comment.slice(0, atPos) : comment;
+    setComment(`${before}@${member.name} `);
+    setMentionQuery(null);
+  };
+
+  const mentionMatches = mentionQuery !== null
+    ? members.filter((m) => m.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6)
+    : [];
 
   const load = useCallback(async () => {
     const [s, r, c] = await Promise.all([
@@ -322,20 +357,44 @@ export default function SuggestionPage() {
                       <UserChip userId={item.author_id} showYou />
                       <span className="text-xs text-foreground-3">{formatRelativeTime(item.created_at)}</span>
                     </div>
-                    <p className="mt-2.5 text-sm leading-7 text-foreground-2">{item.body}</p>
+                    <p className="mt-2.5 text-sm leading-7 text-foreground-2">
+                      {item.body.split(/(@\w+)/g).map((part, i) =>
+                        part.startsWith("@") ? (
+                          <span key={i} className="font-semibold text-indigo-500">{part}</span>
+                        ) : part
+                      )}
+                    </p>
                   </div>
                 ))
               )}
 
-              <div className="flex flex-col gap-3 border-t border-border pt-5">
+              <div className="relative flex flex-col gap-3 border-t border-border pt-5">
+                {mentionMatches.length > 0 && (
+                  <div className="absolute bottom-full mb-1 left-0 z-20 w-56 overflow-hidden rounded-[1.3rem] border border-border bg-surface shadow-lg">
+                    {mentionMatches.map((m) => (
+                      <button
+                        key={m.user_id}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); insertMention(m); }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-surface-2"
+                      >
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/15 text-[10px] font-bold text-indigo-500">
+                          {m.name.slice(0, 1).toUpperCase()}
+                        </span>
+                        {m.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <textarea
-                  placeholder="Add a comment..."
+                  placeholder="Add a comment... Type @ to mention a teammate"
                   value={comment}
-                  onChange={(e) => setComment(e.target.value)}
+                  onChange={handleCommentChange}
                   rows={4}
                   className="w-full resize-none rounded-[1.25rem] border border-border bg-surface px-4 py-3.5 text-sm text-foreground shadow-[0_18px_36px_-28px_var(--shadow-color)] placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
                 />
-                <div className="flex justify-end">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] text-foreground-3">Type <kbd className="rounded border border-border bg-surface-2 px-1 text-[10px]">@</kbd> to mention a teammate</p>
                   <Button size="md" variant="secondary" onClick={handleComment} loading={submittingComment} disabled={!comment.trim()}>
                     Post comment
                   </Button>
