@@ -11,6 +11,7 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CommandPalette } from "@/components/CommandPalette";
+import { ShortcutOverlay } from "@/components/ShortcutOverlay";
 import { Button } from "@/components/ui/Button";
 import { WorkspaceProvider, useWorkspace } from "@/contexts/WorkspaceContext";
 import { cn } from "@/lib/utils";
@@ -220,29 +221,44 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className="flex items-center gap-2 lg:hidden">
-                <Link href="/dashboard/docs/new">
-                  <div className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-indigo-500 px-4 text-sm font-semibold text-white">
-                    <Plus className="h-4 w-4" />
-                    New
-                  </div>
-                </Link>
-                <UserButton />
-                <SignOutButton redirectUrl="/sign-in">
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </Button>
-                </SignOutButton>
+                <NotificationBell />
                 <ThemeToggle />
+                <UserButton />
               </div>
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 pt-5">{children}</main>
+          <main className="min-w-0 flex-1 pb-20 pt-5 lg:pb-6">{children}</main>
         </div>
       </div>
 
+      {/* Mobile bottom tab bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-surface/90 backdrop-blur-xl lg:hidden">
+        {[
+          { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
+          { href: "/dashboard/activity", label: "Activity", icon: Activity, exact: false },
+          { href: "/dashboard/docs/new", label: "New", icon: FilePlus2, exact: false },
+          { href: "/dashboard/settings", label: "Settings", icon: Settings, exact: false },
+        ].map(({ href, label: navLabel, icon: Icon, exact }) => {
+          const active = exact ? pathname === href : pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "flex flex-1 flex-col items-center justify-center gap-1 py-3 text-[10px] font-semibold transition-colors",
+                active ? "text-indigo-500" : "text-foreground-3"
+              )}
+            >
+              <Icon className="h-5 w-5" />
+              {navLabel}
+            </Link>
+          );
+        })}
+      </nav>
+
       <CommandPalette workspaceId={activeWorkspace?.id ?? null} />
+      <ShortcutOverlay />
     </div>
   );
 }
