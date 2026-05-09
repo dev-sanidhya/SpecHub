@@ -1,11 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getAuthAndClient, ok, err } from "@/lib/api";
 import { summarizeDiff } from "@/lib/claude";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 // POST /api/suggestions/:id/summary - generate plain-English diff summary
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error, db } = await getAuthAndClient();
+  const { error, userId, db } = await getAuthAndClient();
   if (error) return error;
+
+  const { allowed } = checkRateLimit(userId!, "diff-summary", 20);
+  if (!allowed) return ok({ summary: null }); // soft fail - don't block the page load
 
   const { id } = await params;
   const { base_content, proposed_content } = await req.json();
