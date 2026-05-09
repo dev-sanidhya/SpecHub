@@ -102,6 +102,7 @@ export default function DocPage() {
   const [suggestDesc, setSuggestDesc] = useState("");
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [showLockWarning, setShowLockWarning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -433,6 +434,29 @@ export default function DocPage() {
     }
   }, [doc, docId]);
 
+  const handleExportPdf = useCallback(async () => {
+    if (!doc) return;
+    setExportingPdf(true);
+    try {
+      const res = await fetch(`/api/documents/${docId}/pdf`);
+      if (!res.ok) throw new Error("PDF export failed");
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match ? match[1] : `${docId}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silent fail
+    } finally {
+      setExportingPdf(false);
+    }
+  }, [doc, docId]);
+
   const handleArchive = useCallback(async () => {
     if (!doc) return;
     setArchiving(true);
@@ -598,7 +622,11 @@ export default function DocPage() {
                   <>
                     <Button variant="ghost" size="md" onClick={handleExport} loading={exporting} disabled={!doc?.current_version_id} className="gap-2">
                       <Download className="h-4 w-4" />
-                      Export
+                      Markdown
+                    </Button>
+                    <Button variant="ghost" size="md" onClick={handleExportPdf} loading={exportingPdf} disabled={!doc?.current_version_id} className="gap-2">
+                      <Download className="h-4 w-4" />
+                      PDF
                     </Button>
                     {openSuggestions > 0 && !showLockWarning ? (
                       <Button variant="secondary" size="md" onClick={() => setShowLockWarning(true)} className="gap-2">
