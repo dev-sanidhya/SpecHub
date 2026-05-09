@@ -55,6 +55,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const s = suggestion as any;
 
     if (s) {
+      // Enforce approval policy before merging
+      const { data: docPolicy } = await db!
+        .from("documents")
+        .select("min_approvals, required_reviewer_id")
+        .eq("id", s.document_id)
+        .single();
+
+      if (docPolicy) {
+        const policy = docPolicy as { min_approvals: number; required_reviewer_id: string | null };
+        const { data: approvals } = await db!
+          .from("reviews")
+          .select("reviewer_id, decision")
+          .eq("suggestion_id", id)
+          .eq("decision", "approved");
+
+        const approvalList = (approvals ?? []) as { reviewer_id: string }[];
+        if (approvalList.length < policy.min_approvals) {
+          return err(`This document requires at least ${policy.min_approvals} approval${policy.min_approvals > 1 ? "s" : ""} before merging (${approvalList.length} so far).`, 403);
+        }
+        if (policy.required_reviewer_id && !approvalList.some((a) => a.reviewer_id === policy.required_reviewer_id)) {
+          return err("The designated required reviewer has not approved this suggestion yet.", 403);
+        }
+      }
       // Get current version number
       const { data: doc } = await db!
         .from("documents")

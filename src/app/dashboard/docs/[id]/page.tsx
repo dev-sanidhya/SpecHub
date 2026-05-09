@@ -71,6 +71,8 @@ interface Doc {
   current_version_number: number;
   currentVersion?: { content: object };
   tags?: string[];
+  min_approvals?: number;
+  required_reviewer_id?: string | null;
 }
 
 const MODE_LABELS: Record<Mode, { title: string; description: string }> = {
@@ -115,6 +117,9 @@ export default function DocPage() {
   const [deleting, setDeleting] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [minApprovals, setMinApprovals] = useState(1);
+  const [requiredReviewerId, setRequiredReviewerId] = useState<string>("");
+  const [savingPolicy, setSavingPolicy] = useState(false);
   // Version comparison
   const [compareMode, setCompareMode] = useState(false);
   const [compareA, setCompareA] = useState<Version | null>(null);
@@ -157,6 +162,8 @@ export default function DocPage() {
         setDoc(docData);
         setTitle(docData.title ?? "Untitled");
         setTags(docData.tags ?? []);
+        setMinApprovals(docData.min_approvals ?? 1);
+        setRequiredReviewerId(docData.required_reviewer_id ?? "");
         if (docData.currentVersion?.content) {
           const content = docData.currentVersion.content as object;
           setCurrentContent(content);
@@ -488,6 +495,23 @@ export default function DocPage() {
   const removeTag = useCallback((tag: string) => {
     void saveTags(tags.filter((t) => t !== tag));
   }, [tags, saveTags]);
+
+  const savePolicy = useCallback(async () => {
+    if (!doc) return;
+    setSavingPolicy(true);
+    try {
+      await fetch(`/api/documents/${docId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          min_approvals: minApprovals,
+          required_reviewer_id: requiredReviewerId || null,
+        }),
+      });
+    } finally {
+      setSavingPolicy(false);
+    }
+  }, [doc, docId, minApprovals, requiredReviewerId]);
 
   const handleArchive = useCallback(async () => {
     if (!doc) return;
@@ -1181,6 +1205,37 @@ export default function DocPage() {
                       </button>
                     </div>
                     <p className="mt-1.5 text-[10px] text-foreground-3">Press Enter or comma to add. Max 10 tags.</p>
+                  </div>
+
+                  {/* Approval policy */}
+                  <div className="border-t border-border pt-4">
+                    <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Approval policy</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <label className="text-xs text-foreground-2 shrink-0">Min. approvals</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={minApprovals}
+                          onChange={(e) => setMinApprovals(Number(e.target.value))}
+                          className="w-16 rounded-[0.8rem] border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-foreground-2">Required reviewer ID (optional)</label>
+                        <input
+                          type="text"
+                          placeholder="user_..."
+                          value={requiredReviewerId}
+                          onChange={(e) => setRequiredReviewerId(e.target.value)}
+                          className="mt-1.5 w-full rounded-[0.8rem] border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-foreground placeholder:text-foreground-3 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
+                        />
+                      </div>
+                      <Button variant="secondary" size="sm" onClick={savePolicy} loading={savingPolicy} className="gap-1.5">
+                        Save policy
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="rounded-[1.3rem] border border-border bg-surface-2/60 p-4">
