@@ -47,6 +47,7 @@ interface Comment {
   id: string;
   author_id: string;
   body: string;
+  anchor_text: string | null;
   created_at: string;
 }
 
@@ -73,6 +74,7 @@ export default function SuggestionPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [members, setMembers] = useState<{ user_id: string; name: string }[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [anchorText, setAnchorText] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/workspace/members")
@@ -212,14 +214,15 @@ export default function SuggestionPage() {
       await fetch(`/api/suggestions/${sid}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: comment }),
+        body: JSON.stringify({ body: comment, anchor_text: anchorText }),
       });
       setComment("");
+      setAnchorText(null);
       await load();
     } finally {
       setSubmittingComment(false);
     }
-  }, [comment, sid, load]);
+  }, [comment, anchorText, sid, load]);
 
   if (loading || !suggestion) {
     return (
@@ -334,7 +337,13 @@ export default function SuggestionPage() {
             <div className="border-b border-border px-6 py-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">Files changed</p>
             </div>
-            <div className="panel-soft overflow-hidden rounded-none">
+            <div
+              className="panel-soft overflow-hidden rounded-none"
+              onMouseUp={() => {
+                const sel = window.getSelection()?.toString().trim();
+                if (sel && sel.length > 3 && sel.length < 300) setAnchorText(sel);
+              }}
+            >
               <DiffView oldText={oldText} newText={newText} />
             </div>
           </div>
@@ -353,6 +362,12 @@ export default function SuggestionPage() {
               ) : (
                 comments.map((item) => (
                   <div key={item.id} className="rounded-[1.4rem] border border-border bg-surface-2/65 p-5">
+                    {item.anchor_text && (
+                      <div className="mb-3 flex items-start gap-2 rounded-[0.8rem] border border-indigo-500/15 bg-indigo-500/5 px-3 py-2">
+                        <span className="mt-0.5 h-3 w-0.5 shrink-0 rounded-full bg-indigo-400" />
+                        <p className="text-xs italic text-foreground-3 line-clamp-2">{item.anchor_text}</p>
+                      </div>
+                    )}
                     <div className="flex flex-wrap items-center gap-2">
                       <UserChip userId={item.author_id} showYou />
                       <span className="text-xs text-foreground-3">{formatRelativeTime(item.created_at)}</span>
@@ -369,6 +384,19 @@ export default function SuggestionPage() {
               )}
 
               <div className="relative flex flex-col gap-3 border-t border-border pt-5">
+                {anchorText && (
+                  <div className="flex items-start gap-2 rounded-[1rem] border border-indigo-500/20 bg-indigo-500/6 px-3.5 py-2.5">
+                    <span className="mt-0.5 h-3.5 w-0.5 shrink-0 rounded-full bg-indigo-500" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-indigo-500">Quoting</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs italic text-foreground-2">{anchorText}</p>
+                    </div>
+                    <button type="button" onClick={() => setAnchorText(null)} className="shrink-0 text-foreground-3 hover:text-foreground">×</button>
+                  </div>
+                )}
+                {!anchorText && (
+                  <p className="text-[11px] text-foreground-3">Select text in the diff above to quote it in your comment.</p>
+                )}
                 {mentionMatches.length > 0 && (
                   <div className="absolute bottom-full mb-1 left-0 z-20 w-56 overflow-hidden rounded-[1.3rem] border border-border bg-surface shadow-lg">
                     {mentionMatches.map((m) => (

@@ -24,13 +24,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (error) return error;
 
   const { id } = await params;
-  const { body } = await req.json();
+  const { body, anchor_text } = await req.json();
 
   if (!body?.trim()) return err("body required");
 
   const { data, error: dbErr } = await db!
     .from("comments")
-    .insert({ suggestion_id: id, author_id: userId!, body })
+    .insert({
+      suggestion_id: id,
+      author_id: userId!,
+      body,
+      anchor_text: typeof anchor_text === "string" && anchor_text.trim() ? anchor_text.trim().slice(0, 300) : null,
+    })
     .select()
     .single();
 
