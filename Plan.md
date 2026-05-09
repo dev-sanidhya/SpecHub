@@ -4,11 +4,12 @@
 GitHub for PRDs. Propose, review, and approve changes to product requirement documents using a PR-style workflow. Full version history, AI-written changelogs, contradiction detection, and shareable diff links.
 
 ## Current Status
-**Phase 8 - All Deferred Features COMPLETE**
+**Phase 9 - All 12 Improvements COMPLETE**
 
 - Phase 1-7 all complete (see below)
 - Phase 8 complete: Slack webhook integration, multiple workspaces with sidebar switcher, real-time presence (Supabase Realtime + avatar stack), PDF export (@react-pdf/renderer v4 via `/api/documents/[id]/pdf`)
-- DB: documents.archived (boolean), suggestions.share_token (text unique), workspaces table with multiple rows, workspace_members with role
+- Phase 9 complete: keyboard shortcut overlay (?), table of contents (sidebar), mobile bottom nav, live suggestion updates (Realtime), draft suggestions, document tags + dashboard filter, custom approval policies with merge enforcement, @mention autocomplete + notifications, audit log CSV export, AI rate limiting (20/hr/user), email digest endpoint (Resend), inline/quoted comments with diff selection
+- DB: documents.archived, suggestions.share_token, workspaces multi-row, workspace_members with role, documents.tags (text[]), documents.min_approvals (int), documents.required_reviewer_id (text), suggestions status includes 'draft', comments.anchor_text (text)
 - ANTHROPIC_API_KEY still needs to be swapped in `.env.local` (placeholder set)
 - **Run Phase 5 SQL additions** in Supabase dashboard (bottom of supabase-schema.sql)
 - Build passes clean (tsc --noEmit) - ready for deployment via `npm run dev`
@@ -264,7 +265,7 @@ supabase-schema.sql                             - SQL to run in Supabase dashboa
 
 ---
 
-### Phase 9 - Next Improvements (Backlog)
+### Phase 9 - All 12 Improvements (COMPLETE)
 
 **Custom approval policies** (still unbuilt from Phase 7 roadmap)
 - Per-document setting: minimum approvals required before merge (1, 2, or all reviewers)
