@@ -264,6 +264,72 @@ supabase-schema.sql                             - SQL to run in Supabase dashboa
 
 ---
 
+### Phase 9 - Next Improvements (Backlog)
+
+**Custom approval policies** (still unbuilt from Phase 7 roadmap)
+- Per-document setting: minimum approvals required before merge (1, 2, or all reviewers)
+- Designate a required reviewer whose approval is mandatory - merge button stays disabled until they approve
+- Merge button shows progress: "2 / 3 approvals" indicator
+- Stored as JSONB on `documents` or a separate `document_settings` table
+
+**Live suggestion updates via Supabase Realtime**
+- Subscribe to changes on `suggestions` and `reviews` for the current document
+- If a teammate approves while you are on the doc page, the open-suggestion count updates without a refresh
+- Presence is already wired - extending to data subscriptions is low effort from here
+
+**Inline / section comments**
+- Comments attached to a specific paragraph or heading rather than the whole suggestion
+- Tiptap supports node decorations - a comment marker icon appears in the gutter
+- Floating popover shows the thread when hovered or clicked
+- Dramatically improves async review quality on long specs
+
+**@mentions in comments**
+- Type `@name` in a comment to tag a workspace member
+- Triggers a notification for the mentioned user
+- Surfaces their avatar inline in the comment thread
+
+**Document organisation: tags and folders**
+- Tag documents with labels (feature, infra, design, API, etc.)
+- Filter dashboard by tag
+- Optional folder grouping in the sidebar for workspaces with many docs
+- No schema change needed for tags - store as `text[]` on `documents`
+
+**Table of contents**
+- Auto-generated from headings in the document, displayed as a sticky panel in the read sidebar
+- Clicking a heading smoothly scrolls to it in the editor
+- Updates live as headings are added/removed
+
+**Keyboard shortcut overlay**
+- Press `?` anywhere in the dashboard to show a modal listing all shortcuts
+- Groups: navigation, editor, version, suggestion
+
+**Audit log export**
+- Page in Settings showing a chronological log of all workspace actions (doc created, version saved, suggestion merged, member joined, etc.)
+- Export as CSV for compliance needs
+- Powered by the existing `notifications` table - just expose it to owners
+
+**Draft suggestions**
+- Save a suggestion as a private draft before submitting it for review
+- Draft is only visible to the author
+- `status: "draft"` in the suggestions table - already has a status enum
+
+**Email digest notifications**
+- Daily or weekly email summary of open suggestions, recent merges, and pending reviews
+- Clerk provides user email addresses - route through Resend or a similar transactional email service
+- Opt-in per user in Settings
+
+**Mobile navigation**
+- Bottom tab bar on mobile: Overview, Activity, New doc, Settings
+- Tiptap toolbar wraps correctly on small screens
+- Still unbuilt from the original Phase 8 plan
+
+**Rate limiting on AI endpoints**
+- `/api/documents/[id]/check` and `/api/suggestions/[id]/summary` are currently unprotected
+- Add a simple in-memory or Upstash Redis rate limiter: 20 AI calls per user per hour
+- Prevents runaway costs if an automated tool or abusive user hammers the endpoints
+
+---
+
 ## Free vs Paid Tiers
 
 | Feature | Free | Paid ($18/user/month) |
