@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Check, Copy, Globe2, Loader2, Palette, Sparkles, Trash2, User2, UserPlus, Users, X } from "lucide-react";
+import { Check, Copy, Globe2, Loader2, Palette, Sparkles, Trash2, User2, UserPlus, Users, Webhook, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
@@ -65,13 +65,19 @@ export default function SettingsPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [revokingToken, setRevokingToken] = useState<string | null>(null);
 
+  // Slack
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
+  const [slackSaved, setSlackSaved] = useState(false);
+  const [savingSlack, setSavingSlack] = useState(false);
+
   useEffect(() => {
     fetch("/api/workspace")
       .then((r) => r.json())
-      .then((ws: { name?: string; id?: string; owner_id?: string }) => {
+      .then((ws: { name?: string; id?: string; owner_id?: string; slack_webhook_url?: string }) => {
         setWorkspaceName(ws.name ?? "My Workspace");
         setOriginalName(ws.name ?? "My Workspace");
         setIsOwner(ws.owner_id === user?.id);
+        setSlackWebhookUrl(ws.slack_webhook_url ?? "");
       })
       .catch(console.error);
   }, [user?.id]);
@@ -166,6 +172,23 @@ export default function SettingsPage() {
       setSavingWorkspace(false);
     }
   }, [workspaceName, originalName]);
+
+  const handleSaveSlack = useCallback(async () => {
+    setSavingSlack(true);
+    try {
+      await fetch("/api/workspace", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slack_webhook_url: slackWebhookUrl }),
+      });
+      setSlackSaved(true);
+      setTimeout(() => setSlackSaved(false), 3000);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSavingSlack(false);
+    }
+  }, [slackWebhookUrl]);
 
   const accountFields = [
     { label: "Name", value: user?.fullName ?? user?.username ?? "Not set" },
@@ -431,6 +454,66 @@ export default function SettingsPage() {
               </Badge>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Slack Integration */}
+      <section className="panel overflow-hidden rounded-[2.2rem]">
+        <div className="border-b border-border px-7 py-8 lg:px-8">
+          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+            <Zap className="h-3.5 w-3.5" />
+            Integrations
+          </p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-foreground">Slack notifications</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-foreground-2">
+            Paste an incoming webhook URL to receive a Slack message when a suggestion is opened, merged, or rejected in this workspace.
+          </p>
+        </div>
+
+        <div className="px-7 py-8 lg:px-8">
+          <div className="max-w-lg space-y-4">
+            <div className="rounded-[1.3rem] border border-border bg-surface-2/60 p-4">
+              <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Webhook className="h-4 w-4 text-indigo-500" />
+                Incoming webhook URL
+              </p>
+              <p className="mt-2 text-xs leading-5 text-foreground-3">
+                Create an app at api.slack.com, enable Incoming Webhooks, then paste the URL here.
+                SpecHub never stores this key in client-side code.
+              </p>
+            </div>
+            <Input
+              type="url"
+              placeholder="https://hooks.slack.com/services/T.../B.../..."
+              value={slackWebhookUrl}
+              onChange={(e) => setSlackWebhookUrl(e.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <Button
+                size="md"
+                variant={slackSaved ? "secondary" : "primary"}
+                onClick={handleSaveSlack}
+                loading={savingSlack}
+                disabled={!isOwner}
+                className="gap-2"
+              >
+                {slackSaved ? <Check className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+                {slackSaved ? "Saved" : "Save webhook"}
+              </Button>
+              {slackWebhookUrl && (
+                <button
+                  type="button"
+                  onClick={() => { setSlackWebhookUrl(""); void handleSaveSlack(); }}
+                  className="text-xs text-foreground-3 hover:text-danger"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {!isOwner && (
+              <p className="text-xs text-foreground-3">Only the workspace owner can configure integrations.</p>
+            )}
+          </div>
         </div>
       </section>
 

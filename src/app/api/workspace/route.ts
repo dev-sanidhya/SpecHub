@@ -5,13 +5,20 @@ export async function PATCH(request: Request) {
   const { error, userId, db } = await getAuthAndClient();
   if (error) return error;
 
-  const body = await request.json() as { name?: unknown };
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  if (!name) return err("Name is required", 400);
+  const body = await request.json() as { name?: unknown; slack_webhook_url?: unknown };
+
+  const updates: Record<string, unknown> = {};
+  if (typeof body.name === "string" && body.name.trim()) {
+    updates.name = body.name.trim();
+  }
+  if (typeof body.slack_webhook_url === "string") {
+    updates.slack_webhook_url = body.slack_webhook_url.trim() || null;
+  }
+  if (Object.keys(updates).length === 0) return err("Nothing to update", 400);
 
   const { data, error: updateErr } = await db!
     .from("workspaces")
-    .update({ name })
+    .update(updates)
     .eq("owner_id", userId!)
     .select()
     .single();

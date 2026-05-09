@@ -2,6 +2,7 @@
 import { getAuthAndClient, ok, err } from "@/lib/api";
 import { generateChangelog } from "@/lib/claude";
 import { createNotification } from "@/lib/notifications";
+import { notifySlack } from "@/lib/slack";
 import { tiptapToText } from "@/lib/tiptapToText";
 
 // GET /api/suggestions/:id - full suggestion with base version content + AI diff summary
@@ -130,17 +131,37 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           .single();
         const wsId = (doc as any)?.workspace_id;
         if (wsId) {
-          void createNotification(
-            updated.created_by,
-            wsId,
-            status === "merged" ? "suggestion_merged" : "suggestion_rejected",
-            {
-              suggestion_id: id,
-              suggestion_title: updated.title,
-              doc_id: updated.document_id,
-              actor_id: userId!,
-            }
-          );
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+          const link = `${appUrl}/dashboard/docs/${updated.document_id}/suggestions/${id}`;
+
+          if (updated.created_by !== userId!) {
+            void createNotification(
+              updated.created_by,
+              wsId,
+              status === "merged" ? "suggestion_merged" : "suggestion_rejected",
+              {
+                suggestion_id: id,
+                suggestion_title: updated.title,
+                doc_id: updated.document_id,
+                actor_id: userId!,
+              }
+            );
+          }
+
+          // Fetch doc title for Slack
+          const { data: docForSlack } = await db!
+            .from("documents")
+            .select("title")
+            .eq("id", updated.document_id)
+            .single();
+
+          void notifySlack(wsId, {
+            eventType: status === "merged" ? "suggestion_merged" : "suggestion_rejected",
+            suggestionTitle: updated.title,
+            docTitle: (docForSlack as any)?.title ?? "a document",
+            actorName: userId!,
+            link,
+          });
         }
       }
     } catch {

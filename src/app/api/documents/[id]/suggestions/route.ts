@@ -1,5 +1,6 @@
 import { getAuthAndClient, ok, err } from "@/lib/api";
 import { createNotification } from "@/lib/notifications";
+import { notifySlack } from "@/lib/slack";
 
 // GET /api/documents/:id/suggestions
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -72,13 +73,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       .eq("id", id)
       .single();
     const d = doc as { created_by: string; title: string; workspace_id: string } | null;
-    if (d && d.created_by !== userId!) {
-      void createNotification(d.created_by, d.workspace_id, "suggestion_opened", {
-        suggestion_id: (data as { id: string }).id,
-        suggestion_title: title as string,
-        doc_id: id,
-        doc_title: d.title,
-        actor_id: userId!,
+    if (d) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+      const link = `${appUrl}/dashboard/docs/${id}/suggestions/${(data as { id: string }).id}`;
+      if (d.created_by !== userId!) {
+        void createNotification(d.created_by, d.workspace_id, "suggestion_opened", {
+          suggestion_id: (data as { id: string }).id,
+          suggestion_title: title as string,
+          doc_id: id,
+          doc_title: d.title,
+          actor_id: userId!,
+        });
+      }
+      void notifySlack(d.workspace_id, {
+        eventType: "suggestion_opened",
+        suggestionTitle: title as string,
+        docTitle: d.title,
+        actorName: userId!,
+        link,
       });
     }
   } catch {
