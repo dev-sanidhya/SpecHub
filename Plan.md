@@ -4,20 +4,20 @@
 GitHub for PRDs. Propose, review, and approve changes to product requirement documents using a PR-style workflow. Full version history, AI-written changelogs, contradiction detection, and shareable diff links.
 
 ## Current Status
-**Phase 7 - Power Features COMPLETE (major batch)**
+**Phase 8 - All Deferred Features COMPLETE**
 
-- Phase 1 complete: all screens built with Tiptap editor, diff view, suggestion/review flows
-- Phase 2 complete: all API routes live, Supabase queries replacing demo data everywhere
-- Phase 3 complete: Claude API integration for changelog, contradiction detection, diff summary
-- Phase 4 complete: spacing overhaul, settings page, dynamic header, workspace rename API
-- Phase 4b complete: real user identity, on-demand AI checks, self-approval blocked, draft autosave
-- Phase 5 complete: invite system, member management, notification bell, workspace membership for non-owners
-- Phase 6 (partial) complete: document templates (6 built-in), full-text content search, tables, slash command menu (/), fixed member docs visibility
-- Phase 7 complete: Markdown export, activity feed, Cmd+S save, Cmd+K command palette, archive instead of delete (archived filter on dashboard), public shareable diff links (/share/[token]), document locking warning, version comparison (Compare mode in history tab), Share button on suggestion pages
-- DB: documents.archived (boolean), suggestions.share_token (text unique)
+- Phase 1-7 all complete (see below)
+- Phase 8 complete: Slack webhook integration, multiple workspaces with sidebar switcher, real-time presence (Supabase Realtime + avatar stack), PDF export (@react-pdf/renderer v4 via `/api/documents/[id]/pdf`)
+- DB: documents.archived (boolean), suggestions.share_token (text unique), workspaces table with multiple rows, workspace_members with role
 - ANTHROPIC_API_KEY still needs to be swapped in `.env.local` (placeholder set)
 - **Run Phase 5 SQL additions** in Supabase dashboard (bottom of supabase-schema.sql)
-- Build passes clean - ready for local testing via `npm run dev`
+- Build passes clean (tsc --noEmit) - ready for deployment via `npm run dev`
+
+### What was built in Phase 8
+1. **Slack integration** - webhook URL per workspace in Settings, Block Kit messages on suggestion opened/merged/rejected
+2. **Multiple workspaces** - `GET/POST /api/workspaces` (plural), `WorkspaceContext` with localStorage persistence, `WorkspaceSwitcher` dropdown in sidebar
+3. **Real-time presence** - `src/hooks/useDocPresence.ts` using Supabase Realtime channels, avatar stack in doc page header showing other viewers
+4. **PDF export** - `src/lib/tiptapToPDF.tsx` + `GET /api/documents/[id]/pdf`, PDF button alongside Markdown button in doc header
 
 ---
 
