@@ -20,6 +20,7 @@ import {
   Save,
   ShieldAlert,
   Sparkles,
+  Users,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +32,7 @@ import { UserChip } from "@/components/UserChip";
 import { formatRelativeTime } from "@/lib/utils";
 import { TEMPLATES, type Template } from "@/lib/templates";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useDocPresence } from "@/hooks/useDocPresence";
 
 type Mode = "read" | "suggest" | "history";
 type SuggestionStatus = "open" | "approved" | "rejected" | "merged";
@@ -118,6 +120,7 @@ export default function DocPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const { activeWorkspace: workspace } = useWorkspace();
+  const viewers = useDocPresence(isNew ? null : docId);
   const [contradictions, setContradictions] = useState<Contradiction[]>([]);
   const [checkingContradictions, setCheckingContradictions] = useState(false);
   const contradictionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -626,6 +629,38 @@ export default function DocPage() {
                   </Button>
                 )}
               </div>
+
+              {viewers.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1 text-xs text-foreground-3">
+                    <Users className="h-3.5 w-3.5" />
+                    {viewers.length} also viewing
+                  </span>
+                  <div className="flex -space-x-2">
+                    {viewers.slice(0, 5).map((v) => (
+                      <div
+                        key={v.userId}
+                        title={v.name}
+                        className="h-7 w-7 shrink-0 overflow-hidden rounded-full border-2 border-surface bg-indigo-500/20"
+                      >
+                        {v.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={v.imageUrl} alt={v.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center text-[10px] font-bold uppercase text-indigo-500">
+                            {v.name.slice(0, 1)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    {viewers.length > 5 && (
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface bg-surface-3 text-[10px] font-semibold text-foreground-3">
+                        +{viewers.length - 5}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center rounded-full border border-border bg-surface-2/80 p-1">
                 {(["read", "suggest", "history"] as Mode[]).map((item) => (
