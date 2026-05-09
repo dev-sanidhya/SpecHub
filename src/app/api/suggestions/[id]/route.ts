@@ -40,7 +40,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const { status } = await req.json();
 
-  if (!["open", "approved", "rejected", "merged"].includes(status)) {
+  if (!["draft", "open", "approved", "rejected", "merged"].includes(status)) {
     return err("Invalid status");
   }
 

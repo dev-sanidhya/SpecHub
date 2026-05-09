@@ -37,7 +37,7 @@ import { useRealtimeSuggestions } from "@/hooks/useRealtimeSuggestions";
 import { TableOfContents } from "@/components/TableOfContents";
 
 type Mode = "read" | "suggest" | "history";
-type SuggestionStatus = "open" | "approved" | "rejected" | "merged";
+type SuggestionStatus = "draft" | "open" | "approved" | "rejected" | "merged";
 
 interface Contradiction {
   section1: string;
@@ -108,6 +108,7 @@ export default function DocPage() {
   const [archiving, setArchiving] = useState(false);
   const [showLockWarning, setShowLockWarning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [showSuggestForm, setShowSuggestForm] = useState(false);
   const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -371,9 +372,9 @@ export default function DocPage() {
     });
   }, [doc, docId, title]);
 
-  const handleSubmitSuggestion = useCallback(async () => {
+  const handleSubmitSuggestion = useCallback(async (draft = false) => {
     if (!suggestTitle.trim() || !doc?.current_version_id) return;
-    setSubmitting(true);
+    if (draft) setSavingDraft(true); else setSubmitting(true);
     try {
       await fetch(`/api/documents/${docId}/suggestions`, {
         method: "POST",
@@ -383,6 +384,7 @@ export default function DocPage() {
           description: suggestDesc || null,
           proposed_content: suggestContent,
           base_version_id: doc.current_version_id,
+          draft,
         }),
       });
       setSuggestions(await fetch(`/api/documents/${docId}/suggestions`).then((r) => r.json()));
@@ -392,6 +394,7 @@ export default function DocPage() {
       setSuggestDesc("");
     } finally {
       setSubmitting(false);
+      setSavingDraft(false);
     }
   }, [suggestTitle, suggestDesc, suggestContent, doc, docId]);
 
@@ -1028,15 +1031,25 @@ export default function DocPage() {
                   </div>
 
                   <div className="flex gap-2 pt-1">
-                    <Button variant="ghost" size="md" onClick={() => setShowSuggestForm(false)} className="flex-1 gap-2">
+                    <Button variant="ghost" size="md" onClick={() => setShowSuggestForm(false)} className="gap-2">
                       <X className="h-4 w-4" />
                       Cancel
                     </Button>
                     <Button
+                      variant="secondary"
                       size="md"
-                      onClick={handleSubmitSuggestion}
+                      onClick={() => handleSubmitSuggestion(true)}
+                      loading={savingDraft}
+                      disabled={!suggestTitle.trim() || submitting}
+                      className="gap-2"
+                    >
+                      Save draft
+                    </Button>
+                    <Button
+                      size="md"
+                      onClick={() => handleSubmitSuggestion(false)}
                       loading={submitting}
-                      disabled={!suggestTitle.trim()}
+                      disabled={!suggestTitle.trim() || savingDraft}
                       className="flex-1 gap-2"
                     >
                       <GitPullRequest className="h-4 w-4" />
@@ -1083,7 +1096,10 @@ export default function DocPage() {
                         </div>
                         <Badge
                           variant={
-                            suggestion.status === "open" ? "warning" : suggestion.status === "merged" ? "success" : "danger"
+                            suggestion.status === "draft" ? "outline"
+                            : suggestion.status === "open" ? "warning"
+                            : suggestion.status === "merged" ? "success"
+                            : "danger"
                           }
                         >
                           {suggestion.status}
