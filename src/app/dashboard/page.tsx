@@ -30,6 +30,7 @@ interface Doc {
   updated_at: string;
   open_suggestions: number;
   created_by: string;
+  tags?: string[];
 }
 
 interface Workspace {
@@ -43,6 +44,7 @@ export default function DashboardPage() {
   const { activeWorkspace } = useWorkspace();
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
@@ -120,8 +122,9 @@ export default function DashboardPage() {
     }
   }
 
-  const filtered = docs; // filtering now happens server-side via API
+  const filtered = activeTag ? docs.filter((d) => d.tags?.includes(activeTag)) : docs;
 
+  const allTags = Array.from(new Set(docs.flatMap((d) => d.tags ?? [])));
   const totalSuggestions = docs.reduce((sum, doc) => sum + doc.open_suggestions, 0);
   const recentDoc = docs
     .slice()
@@ -263,6 +266,29 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-border px-7 py-3 lg:px-8">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground-3 mr-1">Filter</span>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  activeTag === tag
+                    ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-500"
+                    : "border-border text-foreground-3 hover:text-foreground"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+            {activeTag && (
+              <button type="button" onClick={() => setActiveTag(null)} className="text-[11px] text-foreground-3 underline hover:text-foreground">clear</button>
+            )}
+          </div>
+        )}
+
         <div>
           {loading ? (
             <div className="flex min-h-80 items-center justify-center">
@@ -307,6 +333,9 @@ export default function DashboardPage() {
                             <h3 className="truncate text-base font-semibold text-foreground">{doc.title}</h3>
                             <Badge variant="outline">v{doc.current_version_number}</Badge>
                             {doc.open_suggestions > 0 && <Badge variant="warning">{doc.open_suggestions} open</Badge>}
+                            {(doc.tags ?? []).map((tag) => (
+                              <span key={tag} className="rounded-full border border-indigo-500/20 bg-indigo-500/8 px-2 py-0.5 text-[10px] font-semibold text-indigo-500">{tag}</span>
+                            ))}
                           </div>
                           <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm text-foreground-2">
                             <span>Maintained by</span>

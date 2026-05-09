@@ -70,6 +70,7 @@ interface Doc {
   current_version_id: string | null;
   current_version_number: number;
   currentVersion?: { content: object };
+  tags?: string[];
 }
 
 const MODE_LABELS: Record<Mode, { title: string; description: string }> = {
@@ -112,6 +113,8 @@ export default function DocPage() {
   const [showSuggestForm, setShowSuggestForm] = useState(false);
   const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   // Version comparison
   const [compareMode, setCompareMode] = useState(false);
   const [compareA, setCompareA] = useState<Version | null>(null);
@@ -153,6 +156,7 @@ export default function DocPage() {
 
         setDoc(docData);
         setTitle(docData.title ?? "Untitled");
+        setTags(docData.tags ?? []);
         if (docData.currentVersion?.content) {
           const content = docData.currentVersion.content as object;
           setCurrentContent(content);
@@ -464,6 +468,27 @@ export default function DocPage() {
     }
   }, [doc, docId]);
 
+  const saveTags = useCallback(async (newTags: string[]) => {
+    if (!doc) return;
+    setTags(newTags);
+    await fetch(`/api/documents/${docId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags: newTags }),
+    });
+  }, [doc, docId]);
+
+  const addTag = useCallback((raw: string) => {
+    const tag = raw.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 24);
+    if (!tag || tags.includes(tag) || tags.length >= 10) return;
+    void saveTags([...tags, tag]);
+    setTagInput("");
+  }, [tags, saveTags]);
+
+  const removeTag = useCallback((tag: string) => {
+    void saveTags(tags.filter((t) => t !== tag));
+  }, [tags, saveTags]);
+
   const handleArchive = useCallback(async () => {
     if (!doc) return;
     setArchiving(true);
@@ -609,6 +634,11 @@ export default function DocPage() {
                 <Badge variant="outline">spec</Badge>
                 <Badge variant="outline">v{doc?.current_version_number ?? 1}</Badge>
                 {openSuggestions > 0 && <Badge variant="warning">{openSuggestions} open suggestions</Badge>}
+                {tags.map((tag) => (
+                  <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-indigo-500/20 bg-indigo-500/8 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-500">
+                    {tag}
+                  </span>
+                ))}
               </div>
 
               <div className="mt-5 min-w-0">
@@ -1121,6 +1151,38 @@ export default function DocPage() {
                 </div>
 
                 <div className="space-y-4 p-6">
+                  {/* Tags */}
+                  <div>
+                    <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Tags</p>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {tags.map((tag) => (
+                        <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-indigo-500/20 bg-indigo-500/8 px-2.5 py-1 text-[11px] font-semibold text-indigo-500">
+                          {tag}
+                          <button type="button" onClick={() => removeTag(tag)} className="ml-0.5 hover:text-indigo-700">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Add tag..."
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(tagInput); } }}
+                        className="flex-1 rounded-[1rem] border border-border bg-surface-2 px-3 py-2 text-xs text-foreground placeholder:text-foreground-3 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addTag(tagInput)}
+                        disabled={!tagInput.trim()}
+                        className="rounded-[1rem] border border-border bg-surface-2 px-3 py-2 text-xs font-semibold text-foreground-2 transition-colors hover:bg-surface-3 disabled:opacity-40"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <p className="mt-1.5 text-[10px] text-foreground-3">Press Enter or comma to add. Max 10 tags.</p>
+                  </div>
+
                   <div className="rounded-[1.3rem] border border-border bg-surface-2/60 p-4">
                     <p className="text-sm font-medium text-foreground">Archive document</p>
                     <p className="mt-2 text-sm leading-7 text-foreground-2">

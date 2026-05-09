@@ -56,6 +56,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const updates: Record<string, unknown> = {};
   if (typeof body.title === "string") updates.title = body.title;
   if (typeof body.archived === "boolean") updates.archived = body.archived;
+  if (Array.isArray(body.tags)) updates.tags = body.tags.map(String).slice(0, 10);
 
   if (Object.keys(updates).length === 0) return err("Nothing to update", 400);
 

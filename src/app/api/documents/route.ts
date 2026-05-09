@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 
   let query = db!
     .from("documents")
-    .select("id, title, current_version_number, created_by, created_at, updated_at, archived")
+    .select("id, title, current_version_number, created_by, created_at, updated_at, archived, tags")
     .eq("workspace_id", workspaceId)
     .eq("archived", showArchived)
     .order("updated_at", { ascending: false });
