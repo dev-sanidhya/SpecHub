@@ -6,14 +6,22 @@ GitHub for PRDs. Propose, review, and approve changes to product requirement doc
 ---
 
 ## Current Status
-**Phase 9 complete - all planned features shipped**
+**Phase 10 in progress - friction reduction**
 
-All 9 phases are done. The app is feature-complete and passes `tsc --noEmit` cleanly.
+Phase 9 shipped all planned features. Phase 10 addresses the product adoption problem: making the review flow the path of least resistance rather than an extra step. Core insight: the gate should be at the *end* of the flow (like GitHub), not the beginning.
+
+### Phase 10 completed
+- Ghost editing / auto-suggestion capture (non-owners redirected from "Save" to "Submit for review")
+- AI pre-fills suggestion title and description from the diff - zero paperwork
+- Per-document protection modes: Open / Review suggested / Hard-protected (enforced on both frontend + backend)
+- Inline highlight-to-suggest: select text in the editor, floating "Suggest change" toolbar opens suggest mode
+- Dashboard changelog: "Recent changes" section shows AI-written summaries of every merged edit
 
 ### What still needs to be done before going live
 - Swap `ANTHROPIC_API_KEY` placeholder in `.env.local` with a real key
 - Set `RESEND_API_KEY` in `.env.local` if you want email digests to actually send (optional - falls back to console log)
 - Run the Phase 5 SQL additions in the Supabase dashboard (bottom of `supabase-schema.sql`) if not already done
+- **Run Phase 10 SQL additions** (bottom of `supabase-schema.sql`) - adds `protection_mode` and `is_auto` columns
 - Deploy to Vercel: `vercel --prod`
 
 ---
@@ -84,6 +92,7 @@ src/
       workspace/invites/[token]/route.ts           DELETE (revoke)
       workspace/audit/route.ts                     GET audit log as JSON or CSV (owner only)
       workspace/digest/route.ts                    POST send email digest via Resend (owner only)
+      workspace/changelog/route.ts                 GET recent AI summaries across workspace docs
       workspaces/route.ts                          GET all workspaces for user + POST create workspace
       invite/[token]/route.ts                      GET invite info
       invite/[token]/accept/route.ts               POST accept invite
@@ -93,6 +102,7 @@ src/
       documents/[id]/versions/[vid]/route.ts       GET specific version content
       documents/[id]/suggestions/route.ts          GET (drafts filtered) + POST (draft flag supported)
       documents/[id]/check/route.ts                POST contradiction check (rate-limited, 20/hr)
+      documents/[id]/suggestions/generate/route.ts POST AI draft title+description from diff
       documents/[id]/export/route.ts               GET Markdown export
       documents/[id]/pdf/route.ts                  GET PDF export via @react-pdf/renderer
       suggestions/[id]/route.ts                    GET + PATCH (status, approval policy enforced on merge)
@@ -182,6 +192,30 @@ Spacing overhaul, settings page (workspace rename, theme, AI overview, account),
 - **Real-time presence** - `useDocPresence` hook, Supabase Realtime presence channel per doc, avatar stack in doc header
 - **PDF export** - `src/lib/tiptapToPDF.tsx`, `GET /api/documents/[id]/pdf`, PDF button alongside Markdown in doc header
 
+### Phase 10 - Friction Reduction
+The biggest product risk was that the review flow required conscious intent before starting. Phase 10 flips this: you edit naturally, the system decides what to do with your edits based on who you are.
+
+**Ghost editing / auto-capture**
+Non-owners who click "Save version" are intercepted. The page opens an auto-capture panel that calls `POST /api/documents/[id]/suggestions/generate` with old and new content; Claude generates a suggestion title and description in under a second. The user sees pre-filled fields, can edit them, and submits. The editor resets to the saved state so it's clear the doc hasn't changed - their proposal is now in the review queue.
+
+**Protection modes**
+Three levels selectable by the owner in the management sidebar:
+- `open`: non-owners are auto-captured but can choose to save directly (old behaviour preserved)
+- `soft`: a banner tells non-owners review is suggested; auto-capture still fires
+- `hard`: non-owners see "Submit for review" instead of "Save version"; the backend also enforces this with a 403 on `POST /versions`
+
+**Inline highlight-to-suggest**
+In read mode, selecting any text (5-500 chars) shows a fixed floating pill: "Suggest change." Clicking it switches to suggest mode with the current content pre-loaded - no mode switching required before you start. A `mousedown` listener and scroll listener keep the pill from drifting.
+
+**Dashboard changelog**
+`GET /api/workspace/changelog` fetches the 8 most recent versions with `ai_summary` across all docs. Displayed as a prominent "Recent changes" section above the document list. Shows doc name, version badge, timestamp, and the full AI summary - making the history visible and valuable so people want their work to appear there.
+
+**DB additions (run in Supabase)**
+```sql
+alter table documents add column if not exists protection_mode text not null default 'open' check (protection_mode in ('open', 'soft', 'hard'));
+alter table suggestions add column if not exists is_auto boolean not null default false;
+```
+
 ### Phase 9 - Polish and Collaboration
 - **Keyboard shortcut overlay** - `?` key opens modal with all shortcuts grouped by category
 - **Table of contents** - auto-generated from Tiptap headings, sticky in read-mode sidebar, click to scroll
@@ -211,6 +245,8 @@ Spacing overhaul, settings page (workspace rename, theme, AI overview, account),
 | `documents.min_approvals int`, `documents.required_reviewer_id text` | Phase 9 |
 | `suggestions.status` extended to include `'draft'` | Phase 9 |
 | `comments.anchor_text text` | Phase 9 |
+| `documents.protection_mode text` (open/soft/hard) | Phase 10 |
+| `suggestions.is_auto boolean` | Phase 10 |
 
 ---
 
