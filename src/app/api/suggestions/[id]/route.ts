@@ -58,12 +58,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       // Enforce approval policy before merging
       const { data: docPolicy } = await db!
         .from("documents")
-        .select("min_approvals, required_reviewer_id")
+        .select("min_approvals, required_reviewer_id, current_version_id, current_version_number")
         .eq("id", s.document_id)
         .single();
 
       if (docPolicy) {
-        const policy = docPolicy as { min_approvals: number; required_reviewer_id: string | null };
+        const policy = docPolicy as { min_approvals: number; required_reviewer_id: string | null; current_version_id: string | null; current_version_number: number };
+
+        // Stale base detection - suggestion was opened against an older version
+        const { force } = await req.json().catch(() => ({})) as { force?: boolean };
+        if (!force && policy.current_version_id && policy.current_version_id !== s.base_version_id) {
+          return Response.json(
+            { error: "This suggestion was opened against an older version of the document. The document has since been updated. Force merge to apply anyway.", code: "stale_base" },
+            { status: 409 }
+          );
+        }
+
         const { data: approvals } = await db!
           .from("reviews")
           .select("reviewer_id, decision")
@@ -79,13 +89,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         }
       }
       // Get current version number
-      const { data: doc } = await db!
-        .from("documents")
-        .select("current_version_number")
-        .eq("id", s.document_id)
-        .single();
-
-      const nextNumber = ((doc as any)?.current_version_number ?? 0) + 1;
+      const nextNumber = ((docPolicy as any)?.current_version_number ?? 0) + 1;
 
       // Fetch base version content for changelog generation
       const { data: baseVersion } = await db!

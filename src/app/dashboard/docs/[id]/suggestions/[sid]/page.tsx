@@ -67,6 +67,7 @@ export default function SuggestionPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [merging, setMerging] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
+  const [staleBase, setStaleBase] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [shareLink, setShareLink] = useState<string | null>(null);
@@ -167,18 +168,25 @@ export default function SuggestionPage() {
     [sid, load]
   );
 
-  const handleMerge = useCallback(async () => {
+  const handleMerge = useCallback(async (force = false) => {
     setMerging(true);
     setMergeError(null);
+    setStaleBase(false);
     try {
       const res = await fetch(`/api/suggestions/${sid}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "merged" }),
+        body: JSON.stringify({ status: "merged", force }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setMergeError((data as { error?: string }).error ?? "Merge failed. Check approval requirements.");
+        const errData = data as { error?: string; code?: string };
+        if (errData.code === "stale_base") {
+          setStaleBase(true);
+          setMergeError(errData.error ?? "Document was updated since this suggestion was opened.");
+        } else {
+          setMergeError(errData.error ?? "Merge failed. Check approval requirements.");
+        }
         return;
       }
       await load();
@@ -301,12 +309,24 @@ export default function SuggestionPage() {
                     </Button>
                   )}
                   {approvalCount >= 1 && (
-                    <div className="flex flex-col items-end gap-1">
-                      <Button size="md" variant="secondary" onClick={handleMerge} loading={merging} className="gap-2">
+                    <div className="flex flex-col items-end gap-1.5">
+                      <Button size="md" variant="secondary" onClick={() => handleMerge(false)} loading={merging} className="gap-2">
                         <GitMerge className="h-4 w-4" />
                         Merge
                       </Button>
-                      {mergeError && (
+                      {staleBase && (
+                        <div className="flex flex-col items-end gap-1">
+                          <p className="max-w-xs text-right text-xs text-amber-600 dark:text-amber-400">{mergeError}</p>
+                          <button
+                            type="button"
+                            onClick={() => handleMerge(true)}
+                            className="text-xs font-semibold text-red-500 underline underline-offset-2 hover:text-red-600"
+                          >
+                            Force merge anyway
+                          </button>
+                        </div>
+                      )}
+                      {!staleBase && mergeError && (
                         <p className="max-w-xs text-right text-xs text-red-500">{mergeError}</p>
                       )}
                     </div>
