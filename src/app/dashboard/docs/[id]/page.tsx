@@ -370,6 +370,7 @@ export default function DocPage() {
           proposed_content: currentContent,
           base_version_id: doc.current_version_id,
           draft: false,
+          is_auto: true,
         }),
       });
       // Reset editor back to the saved state so it's clear the doc hasn't changed

@@ -49,7 +49,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (error) return error;
 
   const { id } = await params;
-  const { title, description, proposed_content, base_version_id, draft } = await req.json();
+  const { title, description, proposed_content, base_version_id, draft, is_auto } = await req.json();
 
   if (!title || !proposed_content || !base_version_id) {
     return err("title, proposed_content, and base_version_id are required");
@@ -67,6 +67,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       description: description ?? null,
       created_by: userId!,
       status: isDraft ? "draft" : "open",
+      is_auto: is_auto === true,
     })
     .select()
     .single();
