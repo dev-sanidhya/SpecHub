@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   Archive,
+  Check,
   ChevronLeft,
   Clock,
   Download,
@@ -15,14 +16,19 @@ import {
   GitPullRequest,
   History,
   Lock,
+  LockOpen,
   Loader2,
   PenLine,
   Save,
+  Shield,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   Users,
+  Wand2,
   X,
 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { DocEditor } from "@/components/editor/DocEditor";
@@ -67,12 +73,14 @@ interface Suggestion {
 interface Doc {
   id: string;
   title: string;
+  created_by: string;
   current_version_id: string | null;
   current_version_number: number;
   currentVersion?: { content: object };
   tags?: string[];
   min_approvals?: number;
   required_reviewer_id?: string | null;
+  protection_mode?: "open" | "soft" | "hard";
 }
 
 const MODE_LABELS: Record<Mode, { title: string; description: string }> = {
@@ -120,6 +128,21 @@ export default function DocPage() {
   const [minApprovals, setMinApprovals] = useState(1);
   const [requiredReviewerId, setRequiredReviewerId] = useState<string>("");
   const [savingPolicy, setSavingPolicy] = useState(false);
+  // Protection mode
+  const [protectionMode, setProtectionMode] = useState<"open" | "soft" | "hard">("open");
+  const [savingProtectionMode, setSavingProtectionMode] = useState(false);
+  // Auto-capture (ghost editing for non-owners)
+  const [showAutoCapture, setShowAutoCapture] = useState(false);
+  const [autoCaptureTitle, setAutoCaptureTitle] = useState("");
+  const [autoCaptureDesc, setAutoCaptureDesc] = useState("");
+  const [generatingAutoTitle, setGeneratingAutoTitle] = useState(false);
+  const [submittingAutoCapture, setSubmittingAutoCapture] = useState(false);
+  // Inline highlight-to-suggest
+  const [selectionPos, setSelectionPos] = useState<{ top: number; left: number } | null>(null);
+  const selectionTextRef = useRef<string | null>(null);
+  const selectionButtonRef = useRef<HTMLDivElement>(null);
+  // Track the last-saved content so we can diff it for AI title generation
+  const baseContentRef = useRef<object>({ type: "doc", content: [] });
   // Version comparison
   const [compareMode, setCompareMode] = useState(false);
   const [compareA, setCompareA] = useState<Version | null>(null);
@@ -132,6 +155,9 @@ export default function DocPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const { activeWorkspace: workspace } = useWorkspace();
+  const { user } = useUser();
+  // Owner = the person who created this doc, OR the workspace owner
+  const isDocOwner = !!user?.id && (user.id === doc?.created_by || workspace?.role === "owner");
   const viewers = useDocPresence(isNew ? null : docId);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   useRealtimeSuggestions(isNew ? null : docId, setSuggestions as any);
@@ -164,10 +190,12 @@ export default function DocPage() {
         setTags(docData.tags ?? []);
         setMinApprovals(docData.min_approvals ?? 1);
         setRequiredReviewerId(docData.required_reviewer_id ?? "");
+        setProtectionMode((docData.protection_mode as "open" | "soft" | "hard") ?? "open");
         if (docData.currentVersion?.content) {
           const content = docData.currentVersion.content as object;
           setCurrentContent(content);
           setSuggestContent(content);
+          baseContentRef.current = content; // track base for AI diff comparison
         }
         setVersions(versionsData);
         if (versionsData.length > 0) setSelectedVersion(versionsData[0]);
@@ -303,6 +331,59 @@ export default function DocPage() {
     []
   );
 
+  // Opens the auto-capture panel and fires the AI to pre-fill the title + description.
+  // Called when a non-owner tries to save directly.
+  const openAutoCapture = useCallback(async () => {
+    setShowAutoCapture(true);
+    setAutoCaptureTitle("");
+    setAutoCaptureDesc("");
+    setGeneratingAutoTitle(true);
+    try {
+      const res = await fetch(`/api/documents/${docId}/suggestions/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ old_content: baseContentRef.current, new_content: currentContent }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { title: string; description: string | null };
+        setAutoCaptureTitle(data.title ?? "");
+        setAutoCaptureDesc(data.description ?? "");
+      }
+    } catch {
+      // silent - user can still type the title manually
+    } finally {
+      setGeneratingAutoTitle(false);
+    }
+  }, [docId, currentContent]);
+
+  // Submits the auto-captured edits as a public suggestion, then resets the editor.
+  const handleAutoCaptureSave = useCallback(async () => {
+    if (!autoCaptureTitle.trim() || !doc?.current_version_id) return;
+    setSubmittingAutoCapture(true);
+    try {
+      await fetch(`/api/documents/${docId}/suggestions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: autoCaptureTitle,
+          description: autoCaptureDesc || null,
+          proposed_content: currentContent,
+          base_version_id: doc.current_version_id,
+          draft: false,
+        }),
+      });
+      // Reset editor back to the saved state so it's clear the doc hasn't changed
+      setCurrentContent(baseContentRef.current);
+      setSuggestContent(baseContentRef.current);
+      setShowAutoCapture(false);
+      setAutoCaptureTitle("");
+      setAutoCaptureDesc("");
+      setSuggestions(await fetch(`/api/documents/${docId}/suggestions`).then((r) => r.json()));
+    } finally {
+      setSubmittingAutoCapture(false);
+    }
+  }, [autoCaptureTitle, autoCaptureDesc, currentContent, doc, docId]);
+
   const handleSaveNew = useCallback(async () => {
     if (!workspace) return;
     setSaving(true);
@@ -326,6 +407,11 @@ export default function DocPage() {
 
   const handleSaveVersion = useCallback(async () => {
     if (!doc) return;
+    // Non-owners never save directly: redirect to the auto-capture suggestion flow
+    if (!isDocOwner) {
+      void openAutoCapture();
+      return;
+    }
     setSaving(true);
     try {
       await fetch(`/api/documents/${docId}/versions`, {
@@ -333,6 +419,7 @@ export default function DocPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: currentContent }),
       });
+      baseContentRef.current = currentContent; // update base after successful save
       localStorage.removeItem(draftKey);
       setHasDraftToRestore(false);
       const [updated, updatedVersions] = await Promise.all([
@@ -345,7 +432,7 @@ export default function DocPage() {
     } finally {
       setSaving(false);
     }
-  }, [doc, docId, currentContent]);
+  }, [doc, docId, currentContent, isDocOwner, openAutoCapture]);
 
   // Cmd+S / Ctrl+S - wired here so handleSaveNew/handleSaveVersion are in scope
   useEffect(() => {
@@ -373,6 +460,56 @@ export default function DocPage() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
+
+  // Clear the inline suggest toolbar when clicking outside it
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      if (selectionButtonRef.current?.contains(e.target as Node)) return;
+      selectionTextRef.current = null;
+      setSelectionPos(null);
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, []);
+
+  // Also clear on scroll (position would drift otherwise)
+  useEffect(() => {
+    const handleScroll = () => {
+      selectionTextRef.current = null;
+      setSelectionPos(null);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Fires after mouse-up inside the read-mode editor area
+  const handleContentMouseUp = useCallback(() => {
+    if (mode !== "read") return;
+    // Small timeout so the browser has settled the selection
+    setTimeout(() => {
+      const sel = window.getSelection();
+      const text = sel?.toString().trim() ?? "";
+      if (text.length > 5 && text.length < 500) {
+        selectionTextRef.current = text;
+        try {
+          const range = sel?.getRangeAt(0);
+          if (range) {
+            const rect = range.getBoundingClientRect();
+            setSelectionPos({
+              top: rect.top - 44,
+              left: rect.left + rect.width / 2,
+            });
+          }
+        } catch {
+          selectionTextRef.current = null;
+          setSelectionPos(null);
+        }
+      } else {
+        selectionTextRef.current = null;
+        setSelectionPos(null);
+      }
+    }, 10);
+  }, [mode]);
 
   const handleTitleBlur = useCallback(async () => {
     if (!doc || title === doc.title) return;
@@ -495,6 +632,21 @@ export default function DocPage() {
   const removeTag = useCallback((tag: string) => {
     void saveTags(tags.filter((t) => t !== tag));
   }, [tags, saveTags]);
+
+  const saveProtectionMode = useCallback(async (newMode: "open" | "soft" | "hard") => {
+    if (!doc) return;
+    setProtectionMode(newMode);
+    setSavingProtectionMode(true);
+    try {
+      await fetch(`/api/documents/${docId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ protection_mode: newMode }),
+      });
+    } finally {
+      setSavingProtectionMode(false);
+    }
+  }, [doc, docId]);
 
   const savePolicy = useCallback(async () => {
     if (!doc) return;
@@ -658,6 +810,18 @@ export default function DocPage() {
                 <Badge variant="outline">spec</Badge>
                 <Badge variant="outline">v{doc?.current_version_number ?? 1}</Badge>
                 {openSuggestions > 0 && <Badge variant="warning">{openSuggestions} open suggestions</Badge>}
+                {protectionMode === "hard" && (
+                  <span className="flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/8 px-2.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                    <ShieldCheck className="h-3 w-3" />
+                    Protected
+                  </span>
+                )}
+                {protectionMode === "soft" && (
+                  <span className="flex items-center gap-1 rounded-full border border-indigo-500/15 bg-indigo-500/8 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-500">
+                    <ShieldAlert className="h-3 w-3" />
+                    Review suggested
+                  </span>
+                )}
                 {tags.map((tag) => (
                   <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-indigo-500/20 bg-indigo-500/8 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-500">
                     {tag}
@@ -689,24 +853,33 @@ export default function DocPage() {
                       <Download className="h-4 w-4" />
                       PDF
                     </Button>
-                    {openSuggestions > 0 && !showLockWarning ? (
-                      <Button variant="secondary" size="md" onClick={() => setShowLockWarning(true)} className="gap-2">
-                        <Lock className="h-4 w-4" />
-                        Save version
-                      </Button>
-                    ) : showLockWarning ? (
-                      <div className="flex items-center gap-2 rounded-[1.4rem] border border-amber-500/30 bg-amber-500/8 px-4 py-2">
-                        <p className="text-xs text-amber-700 dark:text-amber-400">Save anyway? Open reviews will see a stale diff.</p>
-                        <button type="button" onClick={() => setShowLockWarning(false)} className="text-xs text-foreground-3 hover:text-foreground">Cancel</button>
-                        <Button size="sm" onClick={() => { setShowLockWarning(false); handleSaveVersion(); }} loading={saving} className="gap-1.5">
-                          <Save className="h-3.5 w-3.5" />
-                          Save
+                    {isDocOwner ? (
+                      // Owner: existing save-version flow with lock warning
+                      openSuggestions > 0 && !showLockWarning ? (
+                        <Button variant="secondary" size="md" onClick={() => setShowLockWarning(true)} className="gap-2">
+                          <Lock className="h-4 w-4" />
+                          Save version
                         </Button>
-                      </div>
+                      ) : showLockWarning ? (
+                        <div className="flex items-center gap-2 rounded-[1.4rem] border border-amber-500/30 bg-amber-500/8 px-4 py-2">
+                          <p className="text-xs text-amber-700 dark:text-amber-400">Save anyway? Open reviews will see a stale diff.</p>
+                          <button type="button" onClick={() => setShowLockWarning(false)} className="text-xs text-foreground-3 hover:text-foreground">Cancel</button>
+                          <Button size="sm" onClick={() => { setShowLockWarning(false); handleSaveVersion(); }} loading={saving} className="gap-1.5">
+                            <Save className="h-3.5 w-3.5" />
+                            Save
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button variant="secondary" size="md" onClick={handleSaveVersion} loading={saving} className="gap-2">
+                          <Save className="h-4 w-4" />
+                          Save version
+                        </Button>
+                      )
                     ) : (
-                      <Button variant="secondary" size="md" onClick={handleSaveVersion} loading={saving} className="gap-2">
-                        <Save className="h-4 w-4" />
-                        Save version
+                      // Non-owner: always goes through suggestion review
+                      <Button size="md" onClick={openAutoCapture} loading={generatingAutoTitle && showAutoCapture} className="gap-2">
+                        <GitPullRequest className="h-4 w-4" />
+                        Submit for review
                       </Button>
                     )}
                   </>
@@ -935,6 +1108,96 @@ export default function DocPage() {
       ) : (
         <section className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-6">
+            {/* Protection mode banner for non-owners */}
+            {!isDocOwner && protectionMode === "hard" && mode === "read" && (
+              <div className="flex items-center gap-3 rounded-[1.8rem] border border-amber-500/25 bg-amber-500/8 px-5 py-3.5">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  <span className="font-semibold">Protected document.</span>{" "}
+                  Your edits will be submitted for review and cannot be saved directly.
+                </p>
+              </div>
+            )}
+            {!isDocOwner && protectionMode === "soft" && mode === "read" && (
+              <div className="flex items-center gap-3 rounded-[1.8rem] border border-indigo-500/20 bg-indigo-500/8 px-5 py-3.5">
+                <ShieldAlert className="h-4 w-4 shrink-0 text-indigo-500" />
+                <p className="text-sm text-indigo-600 dark:text-indigo-400">
+                  <span className="font-semibold">Review suggested.</span>{" "}
+                  Submit your changes for review to keep a clean history.
+                </p>
+              </div>
+            )}
+
+            {/* Auto-capture panel - shown when a non-owner tries to save */}
+            {showAutoCapture && (
+              <div className="panel overflow-hidden rounded-[2rem]">
+                <div className="border-b border-indigo-500/15 bg-indigo-500/5 px-6 py-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                        <GitPullRequest className="h-3.5 w-3.5" />
+                        Submit for review
+                      </p>
+                      <p className="mt-1.5 text-sm leading-6 text-foreground-2">
+                        Your edits will become a suggestion for the owner to review instead of saving directly.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAutoCapture(false)}
+                      className="mt-0.5 text-foreground-3 hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-4 p-6">
+                  {generatingAutoTitle && (
+                    <div className="flex items-center gap-2 text-xs text-foreground-3">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      AI is naming your change...
+                    </div>
+                  )}
+                  {!generatingAutoTitle && autoCaptureTitle && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-indigo-500">
+                      <Wand2 className="h-3.5 w-3.5" />
+                      <span className="font-semibold">AI pre-filled title and description. Edit as needed.</span>
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="Suggestion title..."
+                    value={autoCaptureTitle}
+                    onChange={(e) => setAutoCaptureTitle(e.target.value)}
+                    className="w-full rounded-[1.2rem] border border-border bg-surface px-4 py-3 text-sm text-foreground placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
+                  />
+                  <textarea
+                    placeholder="Why does this change exist? (optional)"
+                    value={autoCaptureDesc}
+                    onChange={(e) => setAutoCaptureDesc(e.target.value)}
+                    rows={3}
+                    className="w-full resize-none rounded-[1.2rem] border border-border bg-surface px-4 py-3 text-sm text-foreground placeholder:text-foreground-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/12"
+                  />
+                  <div className="flex gap-2 pt-1">
+                    <Button variant="ghost" size="md" onClick={() => setShowAutoCapture(false)} className="gap-1.5">
+                      <X className="h-4 w-4" />
+                      Cancel
+                    </Button>
+                    <Button
+                      size="md"
+                      onClick={handleAutoCaptureSave}
+                      loading={submittingAutoCapture}
+                      disabled={!autoCaptureTitle.trim() || generatingAutoTitle}
+                      className="flex-1 gap-2"
+                    >
+                      <GitPullRequest className="h-4 w-4" />
+                      Submit for review
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {hasDraftToRestore && mode === "read" && (
               <div className="flex items-center justify-between gap-4 rounded-[1.8rem] border border-indigo-500/25 bg-indigo-500/8 px-5 py-4">
                 <p className="text-sm leading-7 text-foreground">
@@ -969,7 +1232,32 @@ export default function DocPage() {
               </div>
             )}
 
-            <div className="panel rounded-[2rem] p-3 lg:p-4">
+            {/* Floating inline suggest toolbar - appears on text selection in read mode */}
+            {selectionPos && mode === "read" && (
+              <div
+                ref={selectionButtonRef}
+                style={{ position: "fixed", top: selectionPos.top, left: selectionPos.left, transform: "translateX(-50%)", zIndex: 50 }}
+                className="flex items-center gap-1.5 rounded-full border border-indigo-500/25 bg-surface px-3.5 py-2 shadow-[0_8px_24px_-8px_rgba(99,102,241,0.35)]"
+              >
+                <PenLine className="h-3.5 w-3.5 text-indigo-500" />
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // keep selection alive until we capture it
+                    setSuggestContent(currentContent);
+                    setMode("suggest");
+                    setShowSuggestForm(true);
+                    selectionTextRef.current = null;
+                    setSelectionPos(null);
+                  }}
+                  className="text-xs font-semibold text-indigo-500 hover:text-indigo-600"
+                >
+                  Suggest change
+                </button>
+              </div>
+            )}
+
+            <div className="panel rounded-[2rem] p-3 lg:p-4" onMouseUp={handleContentMouseUp}>
               {mode === "read" && <DocEditor content={currentContent} editable onChange={handleContentChange} />}
 
               {mode === "suggest" &&
@@ -1205,6 +1493,56 @@ export default function DocPage() {
                       </button>
                     </div>
                     <p className="mt-1.5 text-[10px] text-foreground-3">Press Enter or comma to add. Max 10 tags.</p>
+                  </div>
+
+                  {/* Protection mode */}
+                  <div className="border-t border-border pt-4">
+                    <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground-3">Edit access</p>
+                    <div className="space-y-2">
+                      {(
+                        [
+                          {
+                            value: "open" as const,
+                            icon: LockOpen,
+                            label: "Open",
+                            desc: "Anyone in the workspace can save versions directly.",
+                          },
+                          {
+                            value: "soft" as const,
+                            icon: Shield,
+                            label: "Review suggested",
+                            desc: "Non-owners are nudged to use suggestions but can still save.",
+                          },
+                          {
+                            value: "hard" as const,
+                            icon: ShieldCheck,
+                            label: "Review required",
+                            desc: "Only you can save. Everyone else must submit for review.",
+                          },
+                        ] as const
+                      ).map(({ value, icon: Icon, label, desc }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => saveProtectionMode(value)}
+                          disabled={savingProtectionMode}
+                          className={`flex w-full items-start gap-3 rounded-[1.2rem] border px-3.5 py-3 text-left transition-colors ${
+                            protectionMode === value
+                              ? "border-indigo-500/30 bg-indigo-500/10"
+                              : "border-border bg-surface-2/50 hover:bg-surface-2"
+                          }`}
+                        >
+                          <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${protectionMode === value ? "text-indigo-500" : "text-foreground-3"}`} />
+                          <div>
+                            <p className={`text-xs font-semibold ${protectionMode === value ? "text-indigo-500" : "text-foreground"}`}>{label}</p>
+                            <p className="mt-0.5 text-[11px] leading-5 text-foreground-3">{desc}</p>
+                          </div>
+                          {protectionMode === value && (
+                            <Check className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Approval policy */}

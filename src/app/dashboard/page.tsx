@@ -21,7 +21,6 @@ import { UserChip } from "@/components/UserChip";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
-import { UserChip } from "@/components/UserChip";
 import { formatRelativeTime } from "@/lib/utils";
 
 interface Doc {
