@@ -128,6 +128,7 @@ export default function DocPage() {
   const [minApprovals, setMinApprovals] = useState(1);
   const [requiredReviewerId, setRequiredReviewerId] = useState<string>("");
   const [savingPolicy, setSavingPolicy] = useState(false);
+  const [workspaceMembers, setWorkspaceMembers] = useState<{ user_id: string; name: string }[]>([]);
   // Protection mode
   const [protectionMode, setProtectionMode] = useState<"open" | "soft" | "hard">("open");
   const [savingProtectionMode, setSavingProtectionMode] = useState(false);
@@ -177,11 +178,15 @@ export default function DocPage() {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const [docData, versionsData, suggestionsData] = await Promise.all([
+        const [docData, versionsData, suggestionsData, membersData] = await Promise.all([
           fetch(`/api/documents/${docId}`).then((r) => r.json()),
           fetch(`/api/documents/${docId}/versions`).then((r) => r.json()),
           fetch(`/api/documents/${docId}/suggestions`).then((r) => r.json()),
+          fetch("/api/workspace/members").then((r) => r.json()).catch(() => []),
         ]);
+        if (!cancelled && Array.isArray(membersData)) {
+          setWorkspaceMembers(membersData as { user_id: string; name: string }[]);
+        }
 
         if (cancelled) return;
 
@@ -1562,14 +1567,19 @@ export default function DocPage() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-foreground-2">Required reviewer ID (optional)</label>
-                        <input
-                          type="text"
-                          placeholder="user_..."
+                        <label className="text-xs text-foreground-2">Required reviewer (optional)</label>
+                        <select
                           value={requiredReviewerId}
                           onChange={(e) => setRequiredReviewerId(e.target.value)}
-                          className="mt-1.5 w-full rounded-[0.8rem] border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-foreground placeholder:text-foreground-3 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
-                        />
+                          className="mt-1.5 w-full rounded-[0.8rem] border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
+                        >
+                          <option value="">None</option>
+                          {workspaceMembers.map((m) => (
+                            <option key={m.user_id} value={m.user_id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <Button variant="secondary" size="sm" onClick={savePolicy} loading={savingPolicy} className="gap-1.5">
                         Save policy
