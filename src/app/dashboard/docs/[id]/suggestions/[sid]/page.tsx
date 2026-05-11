@@ -119,17 +119,23 @@ export default function SuggestionPage() {
     setReviews(r);
     setComments(c);
     setLoading(false);
-    if (s && !s.error) {
-      setLoadingSummary(true);
-      fetch(`/api/suggestions/${sid}/summary`, {
+  }, [sid]);
+
+  const generateSummary = useCallback(async () => {
+    setLoadingSummary(true);
+    setAiSummary(null);
+    try {
+      const res = await fetch(`/api/suggestions/${sid}/summary`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
-      })
-        .then((res) => res.json())
-        .then((data) => setAiSummary(data.summary ?? null))
-        .catch(() => setAiSummary(null))
-        .finally(() => setLoadingSummary(false));
+      });
+      const data = await res.json();
+      setAiSummary(data.summary ?? null);
+    } catch {
+      setAiSummary(null);
+    } finally {
+      setLoadingSummary(false);
     }
   }, [sid]);
 
@@ -145,7 +151,7 @@ export default function SuggestionPage() {
   const approvalCount = reviews.filter((r) => r.decision === "approved").length;
 
   const handleReview = useCallback(
-    async (decision: "approved" | "rejected") => {
+    async (decision: "approved" | "rejected" | "changes_requested") => {
       setSubmittingReview(true);
       try {
         await fetch(`/api/suggestions/${sid}/reviews`, {
@@ -286,6 +292,12 @@ export default function SuggestionPage() {
                     <Button size="md" onClick={() => handleReview("approved")} loading={submittingReview} className="gap-2">
                       <Check className="h-4 w-4" />
                       Approve
+                    </Button>
+                  )}
+                  {user?.id !== suggestion.created_by && myReview?.decision !== "changes_requested" && (
+                    <Button size="md" variant="ghost" onClick={() => handleReview("changes_requested")} loading={submittingReview} className="gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      Request changes
                     </Button>
                   )}
                   {approvalCount >= 1 && (
@@ -462,6 +474,10 @@ export default function SuggestionPage() {
                     <div className="rounded-[1.3rem] border border-green-500/20 bg-green-500/10 px-5 py-4 text-sm leading-7 text-green-600 dark:text-green-400">
                       You approved this suggestion.
                     </div>
+                  ) : myReview?.decision === "changes_requested" ? (
+                    <div className="rounded-[1.3rem] border border-amber-500/20 bg-amber-500/10 px-5 py-4 text-sm leading-7 text-amber-600 dark:text-amber-400">
+                      You requested changes. The author can update and resubmit.
+                    </div>
                   ) : (
                     <p className="text-sm leading-7 text-foreground-2">Approve this change once the diff and rationale look correct.</p>
                   )}
@@ -481,11 +497,21 @@ export default function SuggestionPage() {
           </div>
 
           <div className="panel overflow-hidden rounded-[2rem]">
-            <div className="border-b border-border px-6 py-5">
+            <div className="flex items-center justify-between border-b border-border px-6 py-5">
               <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
                 <Sparkles className="h-3.5 w-3.5" />
                 AI summary
               </p>
+              {!loadingSummary && (
+                <button
+                  type="button"
+                  onClick={generateSummary}
+                  className="flex items-center gap-1.5 rounded-full border border-indigo-500/25 bg-indigo-500/8 px-3 py-1 text-[11px] font-semibold text-indigo-500 transition-colors hover:bg-indigo-500/15"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {aiSummary ? "Regenerate" : "Generate"}
+                </button>
+              )}
             </div>
 
             <div className="p-6">
@@ -497,7 +523,7 @@ export default function SuggestionPage() {
               ) : aiSummary ? (
                 <p className="text-sm leading-7 text-foreground-2 whitespace-pre-line">{aiSummary}</p>
               ) : (
-                <p className="text-sm leading-7 text-foreground-2">No summary available.</p>
+                <p className="text-sm leading-7 text-foreground-2">Click Generate to get an AI-powered summary of this change.</p>
               )}
             </div>
           </div>
@@ -515,7 +541,9 @@ export default function SuggestionPage() {
                   <div key={review.id} className="px-6 py-5">
                     <div className="flex flex-wrap items-center gap-2">
                       <UserChip userId={review.reviewer_id} showYou />
-                      <Badge variant={review.decision === "approved" ? "success" : "danger"}>{review.decision}</Badge>
+                      <Badge variant={review.decision === "approved" ? "success" : review.decision === "changes_requested" ? "warning" : "danger"}>
+                        {review.decision === "changes_requested" ? "changes requested" : review.decision}
+                      </Badge>
                     </div>
                     {review.comment && <p className="mt-2 text-sm leading-6 text-foreground-2">{review.comment}</p>}
                   </div>
