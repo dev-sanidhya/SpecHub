@@ -159,3 +159,20 @@ create index on notifications(read);
 -- RLS
 alter table workspace_invites enable row level security;
 alter table notifications enable row level security;
+
+-- ============================================================
+-- Phase 10: Friction Reduction
+-- Run these in your Supabase SQL editor
+-- ============================================================
+
+-- protection_mode controls who can save versions directly:
+--   'open'  - anyone in the workspace can save (default, existing behaviour)
+--   'soft'  - non-owners are nudged to use suggestions but can still save
+--   'hard'  - only the doc creator can save versions; others must suggest
+alter table documents
+  add column if not exists protection_mode text not null default 'open'
+    check (protection_mode in ('open', 'soft', 'hard'));
+
+-- Track which suggestions were auto-captured from a direct edit
+alter table suggestions
+  add column if not exists is_auto boolean not null default false;

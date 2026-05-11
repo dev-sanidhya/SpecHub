@@ -27,12 +27,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { content } = await req.json();
   if (!content) return err("content required");
 
-  // Get current version number
+  // Load doc to check ownership and protection mode
   const { data: doc } = await db!
     .from("documents")
-    .select("current_version_number")
+    .select("current_version_number, created_by, protection_mode")
     .eq("id", id)
     .single();
+
+  // Hard-protected docs: only the creator can save versions directly
+  if (doc?.protection_mode === "hard" && doc?.created_by !== userId) {
+    return err(
+      "This document is protected. Your changes must go through a suggestion for review.",
+      403
+    );
+  }
 
   const nextNumber = (doc?.current_version_number ?? 0) + 1;
 
