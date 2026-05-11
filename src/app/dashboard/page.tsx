@@ -17,6 +17,7 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
+import { UserChip } from "@/components/UserChip";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
@@ -33,6 +34,16 @@ interface Doc {
   tags?: string[];
 }
 
+interface ChangelogEntry {
+  id: string;
+  version_number: number;
+  ai_summary: string;
+  created_by: string;
+  created_at: string;
+  document_id: string;
+  doc_title: string;
+}
+
 interface Workspace {
   id: string;
   name: string;
@@ -46,6 +57,7 @@ export default function DashboardPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -57,8 +69,13 @@ export default function DashboardPage() {
     setLoading(true);
     workspaceRef.current = activeWorkspace;
     try {
-      const docsRes = await fetch(`/api/documents?workspace_id=${activeWorkspace.id}&archived=${showArchived}`);
+      const [docsRes, changelogRes] = await Promise.all([
+        fetch(`/api/documents?workspace_id=${activeWorkspace.id}&archived=${showArchived}`),
+        fetch(`/api/workspace/changelog?workspace_id=${activeWorkspace.id}`),
+      ]);
       setDocs(await docsRes.json());
+      const cl = await changelogRes.json();
+      setChangelog(Array.isArray(cl) ? cl : []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -217,6 +234,52 @@ export default function DashboardPage() {
           )}
         </div>
       </section>
+
+      {changelog.length > 0 && (
+        <section className="panel overflow-hidden rounded-[2.2rem]">
+          <div className="border-b border-border px-7 py-7 lg:px-8">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-500">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Recent changes
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-foreground">Changelog</h2>
+                <p className="mt-3 text-sm leading-7 text-foreground-2">
+                  AI summaries of every change that was reviewed and merged.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="divide-y divide-border">
+            {changelog.map((entry) => (
+              <div key={entry.id} className="flex items-start gap-5 px-7 py-6 lg:px-8">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[1rem] bg-indigo-500/10">
+                  <Sparkles className="h-4 w-4 text-indigo-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/dashboard/docs/${entry.document_id}`}
+                      className="text-sm font-semibold text-foreground transition-colors hover:text-indigo-500"
+                    >
+                      {entry.doc_title}
+                    </Link>
+                    <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-foreground-3">
+                      v{entry.version_number}
+                    </span>
+                    <span className="text-xs text-foreground-3">
+                      {formatRelativeTime(entry.created_at)}
+                    </span>
+                    <UserChip userId={entry.created_by} />
+                  </div>
+                  <p className="mt-2 text-sm leading-7 text-foreground-2">{entry.ai_summary}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="panel overflow-hidden rounded-[2.2rem]">
         <div className="border-b border-border px-7 py-7 lg:px-8">
