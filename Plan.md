@@ -6,9 +6,9 @@ GitHub for PRDs. Propose, review, and approve changes to product requirement doc
 ---
 
 ## Current Status
-**Phase 10 in progress - friction reduction**
+**Phase 11 complete - review flow hardening**
 
-Phase 9 shipped all planned features. Phase 10 addresses the product adoption problem: making the review flow the path of least resistance rather than an extra step. Core insight: the gate should be at the *end* of the flow (like GitHub), not the beginning.
+Phase 10 shipped friction reduction (ghost editing, AI title generation, protection modes, inline suggest, dashboard changelog). Phase 11 tightened the review workflow with 7 targeted fixes to eliminate gaps and UX papercuts.
 
 ### Phase 10 completed
 - Ghost editing / auto-suggestion capture (non-owners redirected from "Save" to "Submit for review")
@@ -16,6 +16,17 @@ Phase 9 shipped all planned features. Phase 10 addresses the product adoption pr
 - Per-document protection modes: Open / Review suggested / Hard-protected (enforced on both frontend + backend)
 - Inline highlight-to-suggest: select text in the editor, floating "Suggest change" toolbar opens suggest mode
 - Dashboard changelog: "Recent changes" section shows AI-written summaries of every merged edit
+
+### Phase 11 completed - review flow hardening
+Seven targeted fixes to close gaps discovered in review:
+
+1. **Wire `is_auto` flag** - auto-captured ghost-edit suggestions now stored with `is_auto: true` in DB (was constructed but not sent in POST body)
+2. **Lazy AI diff summary** - summary no longer auto-loads on every suggestion page visit (was burning AI credits for every viewer). Now shows a "Generate / Regenerate" button; only calls Claude when explicitly clicked
+3. **Member dropdown for required reviewer** - policy editor now fetches `/api/workspace/members` and renders a `<select>` with real names instead of a raw Clerk user ID text input
+4. **Request changes review action** - third review decision alongside Approve/Reject; backend already supported it, frontend now has the button + badge rendering + sidebar state message
+5. **Stale merge conflict detection** - PATCH merge route checks `doc.current_version_id !== suggestion.base_version_id`; returns 409 with `code: "stale_base"`; frontend shows amber warning + "Force merge anyway" escape hatch
+6. **My Suggestions page** - new `GET /api/suggestions/mine?workspace_id=xxx` route returns all suggestions by the current user across all docs in the workspace; new `/dashboard/suggestions/page.tsx` with stats panel + list; added to sidebar nav and mobile nav
+7. **Plan.md updated** (this entry)
 
 ### What still needs to be done before going live
 - Swap `ANTHROPIC_API_KEY` placeholder in `.env.local` with a real key
@@ -79,6 +90,7 @@ src/
       layout.tsx                                   Sidebar + WorkspaceProvider + mobile bottom nav + ShortcutOverlay
       page.tsx                                     Doc list, tag filter, archive toggle, search
       activity/page.tsx                            Activity feed (workspace notifications)
+      suggestions/page.tsx                         My suggestions - all PRs opened by current user
       settings/page.tsx                            Workspace, members, invites, Slack, audit log, digest, AI, account
       docs/
         new/                                       Redirects to docs/[id] with id=new
@@ -105,11 +117,12 @@ src/
       documents/[id]/suggestions/generate/route.ts POST AI draft title+description from diff
       documents/[id]/export/route.ts               GET Markdown export
       documents/[id]/pdf/route.ts                  GET PDF export via @react-pdf/renderer
-      suggestions/[id]/route.ts                    GET + PATCH (status, approval policy enforced on merge)
-      suggestions/[id]/reviews/route.ts            GET + POST
+      suggestions/[id]/route.ts                    GET + PATCH (status, approval policy + stale-base 409 on merge)
+      suggestions/[id]/reviews/route.ts            GET + POST (approved | rejected | changes_requested)
       suggestions/[id]/comments/route.ts           GET + POST (anchor_text, @mention notifications)
-      suggestions/[id]/summary/route.ts            POST AI diff summary (rate-limited)
+      suggestions/[id]/summary/route.ts            POST AI diff summary (rate-limited, button-triggered only)
       suggestions/[id]/share/route.ts              POST generate share token
+      suggestions/mine/route.ts                    GET all suggestions by current user in workspace
       share/[token]/route.ts                       GET public suggestion view (no auth)
       activity/route.ts                            GET workspace activity feed
       notifications/route.ts                       GET + PATCH (read)
