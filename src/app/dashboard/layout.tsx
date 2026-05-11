@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   Activity, ArrowUpRight, Check, ChevronDown, FilePlus2,
-  LayoutDashboard, LogOut, Orbit, Plus, Settings, Sparkles
+  GitPullRequest, LayoutDashboard, LogOut, Orbit, Plus, Settings, Sparkles
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/activity", label: "Activity", icon: Activity, exact: false },
+  { href: "/dashboard/suggestions", label: "My suggestions", icon: GitPullRequest, exact: false },
   { href: "/dashboard/docs/new", label: "New document", icon: FilePlus2, exact: false },
   { href: "/dashboard/settings", label: "Settings", icon: Settings, exact: false },
 ];
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
 function getHeaderContext(pathname: string) {
   if (pathname === "/dashboard") return { label: "Overview", title: "All documents in your workspace" };
   if (pathname.startsWith("/dashboard/activity")) return { label: "Activity", title: "Recent events across your workspace" };
+  if (pathname.startsWith("/dashboard/suggestions")) return { label: "My suggestions", title: "Your proposed changes across all docs" };
   if (pathname.startsWith("/dashboard/settings")) return { label: "Settings", title: "Manage workspace and preferences" };
   if (pathname.includes("/suggestions/")) return { label: "Suggestion review", title: "Review and approve proposed changes" };
   if (pathname.startsWith("/dashboard/docs/new")) return { label: "New document", title: "Create a new spec" };
